@@ -236,6 +236,7 @@ h1, h2, h3 { margin: 0; }
   font-size: 17px; font-weight: 700; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.3);
 }
 .toast.mal { background: var(--mal); }
+.version { margin: 0; text-align: center; font-size: 14px; color: var(--tinta-2); }
 .banda { position: sticky; top: 0; z-index: 45; display: flex; gap: 10px; align-items: center; justify-content: center; padding: 8px 12px; background: var(--coral); color: #231104; font-weight: 800; font-size: 16px; }
 .banda button { border: 0; border-radius: 8px; background: #231104; color: #fff; min-height: 48px; padding: 0 14px; font-weight: 800; }
 
@@ -273,6 +274,7 @@ h1, h2, h3 { margin: 0; }
     </div>
     <button type="button" class="btn ok grande" id="btn-iniciar" disabled>Iniciar recepción</button>
     <button type="button" class="btn sec" id="btn-instalar" hidden>Instalar como app</button>
+    <p class="version" id="version-inicio"></p>
   </main>
 </section>
 
@@ -390,6 +392,7 @@ h1, h2, h3 { margin: 0; }
 
 <script>
 'use strict';
+const VERSION_APP = '2026-09-25-2';   // igual que VERSION en service-worker.js
 
 /* =====================================================================
    Utilidades
@@ -1413,7 +1416,7 @@ function pintarResumen() {
   }
   lista.innerHTML = html;
   $('#btn-cambiar').hidden = !!(E.escaneos.length || E.noident.length);
-  $('#r-nota').textContent = `Iniciada ${fechaHora(E.rec.creada)} · ${E.rec.archivo}` +
+  $('#r-nota').textContent = `Versión ${VERSION_APP} · Iniciada ${fechaHora(E.rec.creada)} · ${E.rec.archivo}` +
     (E.rec.exportada ? ` · Última exportación ${fechaHora(E.rec.exportada)}` : '');
 }
 
@@ -1581,6 +1584,7 @@ function tomarLectura() {
   rafaga = null;
   const v = lector.value;
   lector.value = '';
+  largoPrevio = 0;
   pintarEspejo();
   recibirLectura(v);
 }
@@ -1592,18 +1596,23 @@ const PAUSA_FIN_MS = 120;         // silencio que marca el final de la lectura
 const MAX_ENTRE_TECLAS_MS = 50;   // ritmo promedio máximo para considerarla del escáner
 let rafaga = null;
 let finRafaga = null;
-function registrarTecla() {
+// Cuenta caracteres, no eventos: DataWedge puede entregar el código de a una tecla o
+// completo en un solo evento, y las dos formas son del escáner.
+function registrarTecla(caracteres = 1) {
+  if (caracteres <= 0) return;
   const ahora = performance.now();
-  if (!rafaga || !lector.value) rafaga = { inicio: ahora, ultimo: ahora, teclas: 0 };
-  rafaga.teclas++;
+  if (!rafaga) rafaga = { inicio: ahora, ultimo: ahora, caracteres: 0 };
+  rafaga.caracteres += caracteres;
   rafaga.ultimo = ahora;
   clearTimeout(finRafaga);
   finRafaga = setTimeout(() => {
     const r = rafaga;
-    if (!r || !lector.value.trim() || r.teclas < 3) return;
-    if ((r.ultimo - r.inicio) / (r.teclas - 1) <= MAX_ENTRE_TECLAS_MS) tomarLectura();
+    rafaga = null;
+    if (!r || !lector.value.trim() || r.caracteres < 3) return;
+    if ((r.ultimo - r.inicio) / (r.caracteres - 1) <= MAX_ENTRE_TECLAS_MS) tomarLectura();
   }, PAUSA_FIN_MS);
 }
+let largoPrevio = 0;
 
 window.addEventListener('keydown', (e) => {
   const t = e.target;
@@ -1624,12 +1633,18 @@ window.addEventListener('keydown', (e) => {
   if (e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && t !== lector) {
     e.preventDefault();
     lector.value += e.key;
+    largoPrevio = lector.value.length;
     registrarTecla();
     enfocarLector();
   }
 }, true);
 $('#form-lectura').addEventListener('submit', (e) => { e.preventDefault(); tomarLectura(); });
-lector.addEventListener('input', () => { pintarEspejo(); registrarTecla(); });
+lector.addEventListener('input', () => {
+  const agregados = lector.value.length - largoPrevio;
+  largoPrevio = lector.value.length;
+  pintarEspejo();
+  registrarTecla(agregados);
+});
 lector.addEventListener('blur', () => setTimeout(enfocarLector, 0));
 window.addEventListener('focus', enfocarLector);
 window.addEventListener('blur', pintarEspejo);
@@ -1766,7 +1781,12 @@ let actualizacionPedida = false;
 function registrarSW() {
   if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
   navigator.serviceWorker.register('service-worker.js').then((reg) => {
-    const ofrecer = () => { if (reg.waiting && navigator.serviceWorker.controller) $('#actualizar').hidden = false; };
+    const ofrecer = () => {
+      if (!reg.waiting || !navigator.serviceWorker.controller) return;
+      // Sin recepción en curso no hay nada que interrumpir: se actualiza sola.
+      if (!E.rec) { actualizacionPedida = true; reg.waiting.postMessage('activar'); return; }
+      $('#actualizar').hidden = false;
+    };
     ofrecer();
     reg.addEventListener('updatefound', () => {
       const nuevo = reg.installing;
@@ -1817,6 +1837,7 @@ function montarPrueba() {
    Arranque
    ===================================================================== */
 async function arrancar() {
+  $('#version-inicio').textContent = `Versión ${VERSION_APP}`;
   if (!(await tomarInstancia())) return irA('bloqueo', {}, { historial: false });
   try {
     BD.db = await abrirBD();

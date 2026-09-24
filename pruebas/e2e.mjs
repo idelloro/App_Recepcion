@@ -226,10 +226,15 @@ try {
   await calma();
   st = await estado();
   afirmar(st.escaneos.at(-1).codigo === '10000029', 'una lectura rápida sin ENTER se procesa sola');
+  await page.keyboard.insertText('10000038');           // código completo en un solo evento, sin ENTER
+  await page.waitForTimeout(300);
+  await calma();
+  st = await estado();
+  afirmar(st.escaneos.at(-1).codigo === '10000038', 'el código entero en un solo evento, sin ENTER, también se procesa solo');
   await page.keyboard.type('10000032', { delay: 150 });  // alguien tecleando
   await page.waitForTimeout(400);
   st = await estado();
-  afirmar(st.escaneos.at(-1).codigo === '10000029', 'lo tecleado a mano espera el ENTER');
+  afirmar(st.escaneos.at(-1).codigo === '10000038', 'lo tecleado a mano espera el ENTER');
   await page.keyboard.press('Enter');
   await calma();
   st = await estado();
