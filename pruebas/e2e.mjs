@@ -220,6 +220,21 @@ try {
   st = await estado();
   afirmar(st.escaneos.slice(-3).map((s) => s.codigo).join() === '10000009,10000014,10000022', 'tres lecturas seguidas sin pausa, en orden');
 
+  console.log('\nEscáner sin ENTER');
+  await page.keyboard.type('10000029', { delay: 8 });   // ritmo de DataWedge, sin ENTER
+  await page.waitForTimeout(300);
+  await calma();
+  st = await estado();
+  afirmar(st.escaneos.at(-1).codigo === '10000029', 'una lectura rápida sin ENTER se procesa sola');
+  await page.keyboard.type('10000032', { delay: 150 });  // alguien tecleando
+  await page.waitForTimeout(400);
+  st = await estado();
+  afirmar(st.escaneos.at(-1).codigo === '10000029', 'lo tecleado a mano espera el ENTER');
+  await page.keyboard.press('Enter');
+  await calma();
+  st = await estado();
+  afirmar(st.escaneos.at(-1).codigo === '10000032', 'y con ENTER se procesa');
+
   // =================================================================== recarga
   console.log('\nRecarga en medio de la recepción');
   const antes = await estado();

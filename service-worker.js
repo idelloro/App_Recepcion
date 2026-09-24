@@ -3,7 +3,7 @@
 //
 // Para publicar una versión nueva, cambiar VERSION. El equipo la baja en segundo plano y
 // la app ofrece "Actualizar"; nunca se recarga sola en medio de una recepción.
-const VERSION = 'recepcion-2026-09-24-1';
+const VERSION = 'recepcion-2026-09-25-1';
 const ARCHIVOS = [
   './',
   './index.html',

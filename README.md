@@ -227,6 +227,11 @@ instante en la barra "Listo para escanear…" y se procesa solo. La app deja el 
 con el foco (`inputmode="none"`, sin teclado en pantalla) y lo recupera si se pierde; si
 por algún motivo lo pierde, la barra se pone roja: **Lector en pausa · toque aquí**.
 
+**Sin ENTER también funciona.** Si el perfil no envía ENTER, la app reconoce la lectura
+por su ritmo: el escáner escribe todos los caracteres en milisegundos, y 120 ms después del
+último la procesa sola. Lo tecleado a mano en un PC sigue esperando el ENTER. Aun así, conviene
+activar **Send ENTER key**: la lectura entra al instante.
+
 **Si algo no funciona:**
 
 - **Nada llega a la app.** Revisar que el perfil esté habilitado y asociado a

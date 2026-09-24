@@ -1577,10 +1577,32 @@ function pintarEspejo() {
   $('#espejo-txt').textContent = lector.value || (activo ? 'Listo para escanear…' : 'Lector en pausa: toque aquí');
 }
 function tomarLectura() {
+  clearTimeout(finRafaga);
+  rafaga = null;
   const v = lector.value;
   lector.value = '';
   pintarEspejo();
   recibirLectura(v);
+}
+
+// Sin ENTER: si DataWedge no lo envía, la lectura se procesa sola cuando termina la ráfaga.
+// El escáner escribe cada carácter a pocos milisegundos del anterior; una persona tecleando
+// es mucho más lenta, así que en el PC sigue haciendo falta el ENTER.
+const PAUSA_FIN_MS = 120;         // silencio que marca el final de la lectura
+const MAX_ENTRE_TECLAS_MS = 50;   // ritmo promedio máximo para considerarla del escáner
+let rafaga = null;
+let finRafaga = null;
+function registrarTecla() {
+  const ahora = performance.now();
+  if (!rafaga || !lector.value) rafaga = { inicio: ahora, ultimo: ahora, teclas: 0 };
+  rafaga.teclas++;
+  rafaga.ultimo = ahora;
+  clearTimeout(finRafaga);
+  finRafaga = setTimeout(() => {
+    const r = rafaga;
+    if (!r || !lector.value.trim() || r.teclas < 3) return;
+    if ((r.ultimo - r.inicio) / (r.teclas - 1) <= MAX_ENTRE_TECLAS_MS) tomarLectura();
+  }, PAUSA_FIN_MS);
 }
 
 window.addEventListener('keydown', (e) => {
@@ -1602,11 +1624,12 @@ window.addEventListener('keydown', (e) => {
   if (e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && t !== lector) {
     e.preventDefault();
     lector.value += e.key;
+    registrarTecla();
     enfocarLector();
   }
 }, true);
 $('#form-lectura').addEventListener('submit', (e) => { e.preventDefault(); tomarLectura(); });
-lector.addEventListener('input', pintarEspejo);
+lector.addEventListener('input', () => { pintarEspejo(); registrarTecla(); });
 lector.addEventListener('blur', () => setTimeout(enfocarLector, 0));
 window.addEventListener('focus', enfocarLector);
 window.addEventListener('blur', pintarEspejo);
