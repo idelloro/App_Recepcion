@@ -1,0 +1,13 @@
+# Alternativa a GitHub Pages que funciona con el repo privado: la app como Worker de solo
+# archivos estáticos en workers.dev. Desde la raíz del repo:
+#
+#   npx wrangler deploy
+#
+# Queda en https://recepcion-tc27.<subdominio>.workers.dev. No hay código de servidor: el
+# Worker solo entrega los archivos la primera vez; después la app corre sin conexión.
+# .assetsignore deja fuera del sitio el historial de git y la configuración.
+name = "recepcion-tc27"
+compatibility_date = "2025-08-01"
+
+[assets]
+directory = "."

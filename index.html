@@ -1,0 +1,1821 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#343579">
+<meta name="color-scheme" content="light">
+<title>Recepción de mercadería</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+:root {
+  --azul: #343579;
+  --azul-hondo: #23244F;
+  --azul-tenue: #8386B2;
+  --coral: #F87C56;
+  --fondo: #EEF0F6;
+  --tinta: #14152B;
+  --tinta-2: #4A4C6A;
+  --linea: #D5D8E6;
+  --ok: #15803D;
+  --ambar: #F59E0B;
+  --mal: #C0392F;
+  --mal-suave: #FDE2E0;
+  --nuevo: #1D4ED8;
+  --gris: #6B7280;
+  --radio: 14px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow-x: hidden; overscroll-behavior-y: contain; }
+body {
+  background: var(--fondo); color: var(--tinta);
+  font: 18px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%; touch-action: manipulation; overscroll-behavior-y: contain;
+  -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+input, select { font: inherit; user-select: text; -webkit-user-select: text; }
+button { font: inherit; color: inherit; -webkit-touch-callout: none; }
+[hidden] { display: none !important; }
+h1, h2, h3 { margin: 0; }
+
+.pantalla {
+  max-width: 560px; margin: 0 auto; min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* ---------- Botones ---------- */
+.btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 100%; min-height: 60px; padding: 8px 14px; border: 0; border-radius: var(--radio);
+  background: var(--azul); color: #fff; font-size: 20px; font-weight: 800; line-height: 1.15;
+  text-align: center; cursor: pointer;
+}
+.btn:active { filter: brightness(.9); transform: translateY(1px); }
+.btn:disabled { opacity: .4; }
+.btn small { font-size: 14px; font-weight: 700; opacity: .85; margin-top: 2px; }
+.btn.sec { background: #fff; color: var(--azul); box-shadow: inset 0 0 0 2px var(--azul); }
+.btn.coral { background: var(--coral); color: #231104; }
+.btn.ok { background: var(--ok); }
+.btn.peligro { background: var(--mal); }
+.btn.grande { min-height: 68px; font-size: 22px; }
+
+/* ---------- Cabeceras ---------- */
+.cab {
+  display: flex; align-items: center; gap: 10px; background: var(--azul); color: #fff;
+  padding: 6px 12px; min-height: 52px;
+}
+.cab .ref { flex: 1; min-width: 0; font-weight: 800; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cab .tot { font-size: 15px; font-weight: 600; white-space: nowrap; opacity: .92; text-align: right; line-height: 1.2; }
+.cab h1 { flex: 1; min-width: 0; font-size: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cab .volver {
+  background: rgba(255,255,255,.14); border: 0; border-radius: 10px; color: #fff;
+  min-height: 48px; padding: 0 12px; font-size: 17px; font-weight: 800; white-space: nowrap;
+}
+
+/* ---------- Inicio ---------- */
+.contenido { flex: 1; padding: 14px 12px 20px; display: flex; flex-direction: column; gap: 14px; }
+.paso { background: #fff; border-radius: var(--radio); padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.paso h2 { font-size: 19px; color: var(--azul); }
+.paso p { margin: 0; color: var(--tinta-2); font-size: 16px; }
+.campo { display: flex; flex-direction: column; gap: 4px; }
+.campo label { font-size: 15px; font-weight: 700; color: var(--tinta-2); }
+.campo select, .campo input {
+  min-height: 52px; width: 100%; padding: 8px 10px; border: 2px solid var(--linea);
+  border-radius: 10px; background: #fff; color: var(--tinta); font-size: 18px;
+}
+.campo input:focus, .campo select:focus { outline: none; border-color: var(--azul); }
+.archivo { font-weight: 800; overflow-wrap: anywhere; }
+.cifras { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cifra { background: var(--fondo); border-radius: 10px; padding: 8px; text-align: center; }
+.cifra b { display: block; font-size: 21px; }
+.cifra span { font-size: 13px; color: var(--tinta-2); font-weight: 700; }
+.avisos { margin: 0; padding: 10px 12px 10px 30px; background: #FFF4DB; border-radius: 10px; color: #6B3E00; font-size: 15px; }
+.avisos.mal { background: var(--mal-suave); color: #7A1D15; }
+.tabla { width: 100%; border-collapse: collapse; font-size: 15px; }
+.tabla th { text-align: left; color: var(--tinta-2); font-size: 13px; border-bottom: 2px solid var(--linea); padding: 4px; }
+.tabla td { border-bottom: 1px solid var(--linea); padding: 6px 4px; vertical-align: top; overflow-wrap: anywhere; }
+.tabla .n { text-align: right; white-space: nowrap; }
+
+/* ---------- Escaneo ---------- */
+#p-escaneo, #p-resumen, #p-detalle { height: 100vh; height: 100dvh; }
+.escaneo { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px 10px 10px; }
+.panel-pallet {
+  flex: 1 1 0; min-height: 150px; border-radius: 18px; background: var(--azul-hondo); color: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  overflow: hidden; text-align: center;
+}
+.panel-pallet .rot { font-size: 18px; font-weight: 800; letter-spacing: .2em; opacity: .75; }
+.panel-pallet .num { font-size: clamp(84px, min(42vw, 25vh), 220px); font-weight: 900; line-height: .92; }
+.panel-pallet.vacio .num { font-size: 26px; font-weight: 700; line-height: 1.25; padding: 0 20px; }
+.panel-pallet.flash { animation: flash .9s ease-out; }
+@keyframes flash { 0%, 40% { background: var(--ok); } 100% { background: var(--azul-hondo); } }
+.etq {
+  font-size: 14px; font-weight: 800; letter-spacing: .08em; padding: 3px 12px; border-radius: 999px;
+  background: var(--gris); color: #fff; white-space: nowrap;
+}
+.etq.abierto { background: var(--ok); }
+.etq.nuevo { background: var(--nuevo); }
+.prod { background: #fff; border-radius: var(--radio); padding: 8px 12px; }
+.prod .desc {
+  font-size: 21px; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.prod .caja { font-size: 17px; color: var(--tinta-2); margin-top: 2px; overflow-wrap: anywhere; }
+.prod .caja b { color: var(--tinta); }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { background: #fff; border-radius: var(--radio); padding: 8px 12px; min-width: 0; }
+.stat .t { font-size: 13px; font-weight: 800; letter-spacing: .05em; color: var(--tinta-2); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat .v { font-size: 22px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat .s { font-size: 16px; color: var(--tinta-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat.exceso .v { color: var(--mal); }
+.barra { height: 8px; background: var(--linea); border-radius: 99px; overflow: hidden; margin-top: 4px; }
+.barra i { display: block; height: 100%; width: 0; background: var(--ok); }
+.barra.exceso i { background: var(--mal); }
+.espejo {
+  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 12px;
+  border-radius: var(--radio); background: #fff; border: 2px solid var(--linea);
+  font: 700 18px/1.2 ui-monospace, "Roboto Mono", monospace; color: var(--tinta-2); overflow: hidden;
+}
+.espejo .led { width: 12px; height: 12px; border-radius: 50%; background: var(--gris); flex: none; }
+.espejo.activo { border-color: var(--ok); }
+.espejo.activo .led { background: var(--ok); }
+.espejo.inactivo { border-color: var(--mal); background: var(--mal-suave); color: var(--mal); }
+.espejo.inactivo .led { background: var(--mal); }
+.espejo .txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.acciones .ancho { grid-column: 1 / -1; }
+
+/* ---------- Resumen y detalle ---------- */
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); background: #fff; border-bottom: 1px solid var(--linea); }
+.tab {
+  min-height: 54px; border: 0; background: transparent; font-size: 17px; font-weight: 800;
+  color: var(--tinta-2); border-bottom: 4px solid transparent; padding: 0 4px;
+}
+.tab.activa { color: var(--azul); border-bottom-color: var(--azul); }
+.tab .cuenta { display: inline-block; min-width: 24px; padding: 0 6px; border-radius: 99px; background: var(--mal); color: #fff; font-size: 14px; }
+.lista { flex: 1; min-height: 0; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.lista > * { flex-shrink: 0; }   /* con alto fijo, las filas no se aplastan: la lista se desplaza */
+.totales { background: var(--azul-hondo); color: #fff; border-radius: var(--radio); padding: 10px 12px; font-size: 17px; font-weight: 700; }
+.totales span { opacity: .8; font-weight: 600; }
+.fila {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; padding: 10px 12px;
+  background: #fff; border: 0; border-radius: var(--radio); text-align: left;
+}
+.fila .n { font-size: 30px; font-weight: 900; min-width: 54px; text-align: center; color: var(--azul); }
+.fila .i { flex: 1; min-width: 0; }
+.fila .a { font-weight: 800; overflow-wrap: anywhere; }
+.fila .b { color: var(--tinta-2); font-size: 16px; }
+.fila.abierta { box-shadow: inset 5px 0 0 var(--ok); }
+.vacia { text-align: center; color: var(--tinta-2); padding: 30px 10px; }
+.avance { background: #fff; border-radius: var(--radio); padding: 10px 12px; }
+.avance .a { font-weight: 800; color: var(--tinta); overflow-wrap: anywhere; }
+.avance .fila2 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin-top: 4px; font-size: 16px; color: var(--tinta-2); }
+.avance .fila2 b { color: var(--tinta); font-size: 19px; }
+.estado { font-size: 13px; font-weight: 900; padding: 3px 10px; border-radius: 999px; color: #fff; white-space: nowrap; }
+.estado.OK { background: var(--ok); }
+.estado.FALTANTE { background: var(--gris); }
+.estado.SOBRANTE { background: var(--mal); }
+.pie-fijo { padding: 10px 10px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--linea); background: var(--fondo); display: grid; gap: 8px; }
+.pie-fijo .nota { font-size: 14px; color: var(--tinta-2); text-align: center; }
+.ficha { background: #fff; border-radius: var(--radio); padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.ficha .a { font-size: 20px; font-weight: 800; overflow-wrap: anywhere; }
+.ficha .b { color: var(--tinta-2); font-size: 16px; }
+.ficha .cifras-p { display: flex; gap: 16px; font-size: 20px; font-weight: 800; align-items: center; flex-wrap: wrap; }
+.caja-fila {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 8px 12px;
+  background: #fff; border: 0; border-radius: var(--radio); text-align: left;
+}
+.caja-fila .chk {
+  width: 34px; height: 34px; flex: none; border-radius: 8px; border: 3px solid var(--azul-tenue);
+  display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff;
+}
+.caja-fila.sel { background: #E4E6F6; }
+.caja-fila.sel .chk { background: var(--azul); border-color: var(--azul); }
+.caja-fila.sel .chk::after { content: "✓"; }
+.caja-fila .i { flex: 1; min-width: 0; }
+.caja-fila .a { font: 800 18px/1.2 ui-monospace, "Roboto Mono", monospace; overflow-wrap: anywhere; }
+.caja-fila .b { color: var(--tinta-2); font-size: 15px; }
+.marca { font-size: 12px; font-weight: 900; color: #fff; background: var(--mal); border-radius: 6px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
+
+/* ---------- Capas de aviso (pantalla completa) ---------- */
+.capa {
+  position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 24px 18px calc(24px + env(safe-area-inset-bottom)); text-align: center; color: #fff;
+}
+.capa.azul { background: var(--nuevo); }
+.capa.roja { background: var(--mal); }
+.capa.ambar { background: var(--ambar); color: #1F1300; }
+.capa .t1 { font-size: 34px; font-weight: 900; letter-spacing: .03em; line-height: 1.05; }
+.capa .t2 { font-size: clamp(96px, 40vw, 220px); font-weight: 900; line-height: .9; white-space: nowrap; }
+.capa .t3 { font-size: 24px; font-weight: 800; overflow-wrap: anywhere; max-width: 100%; }
+.capa .t4 { font-size: 18px; font-weight: 600; max-width: 32ch; }
+.capa .cod { font: 900 28px/1.15 ui-monospace, "Roboto Mono", monospace; background: rgba(0,0,0,.2); padding: 6px 14px; border-radius: 10px; overflow-wrap: anywhere; max-width: 100%; }
+.capa .pie { font-size: 16px; font-weight: 800; opacity: .9; margin-top: 10px; }
+.capa .btns { display: grid; gap: 10px; width: 100%; max-width: 440px; margin-top: 8px; }
+.capa .btn.sec { background: rgba(255,255,255,.9); }
+.sacude { animation: sacude .4s; }
+@keyframes sacude { 20%, 60% { transform: translateX(-12px); } 40%, 80% { transform: translateX(12px); } }
+
+/* ---------- Diálogos ---------- */
+.modal { position: fixed; inset: 0; z-index: 60; background: rgba(10,12,30,.55); display: flex; align-items: flex-end; justify-content: center; }
+.hoja {
+  width: 100%; max-width: 560px; max-height: 92vh; max-height: 92dvh; overflow-y: auto; background: #fff;
+  border-radius: 20px 20px 0 0; padding: 18px 14px calc(14px + env(safe-area-inset-bottom));
+}
+.hoja h2 { font-size: 24px; margin-bottom: 8px; overflow-wrap: anywhere; }
+.hoja .cuerpo { font-size: 18px; color: var(--tinta-2); margin-bottom: 16px; overflow-wrap: anywhere; }
+.hoja .cuerpo b { color: var(--tinta); }
+.hoja .btns { display: grid; gap: 10px; }
+.toast {
+  position: fixed; left: 14px; right: 14px; top: calc(62px + env(safe-area-inset-top)); z-index: 70;
+  width: fit-content; max-width: 532px; margin: 0 auto; padding: 12px 18px; border-radius: 12px; background: var(--tinta); color: #fff;
+  font-size: 17px; font-weight: 700; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.3);
+}
+.toast.mal { background: var(--mal); }
+.banda { position: sticky; top: 0; z-index: 45; display: flex; gap: 10px; align-items: center; justify-content: center; padding: 8px 12px; background: var(--coral); color: #231104; font-weight: 800; font-size: 16px; }
+.banda button { border: 0; border-radius: 8px; background: #231104; color: #fff; min-height: 48px; padding: 0 14px; font-weight: 800; }
+
+/* El lector: invisible pero enfocable en todas las pantallas. Lo que escribe se ve en .espejo. */
+#lectura { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; pointer-events: none; }
+
+/* Panel de pruebas (?prueba) */
+#prueba { position: fixed; left: 0; top: 42%; z-index: 40; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+#prueba button { border: 0; border-radius: 0 10px 10px 0; background: #FDE68A; color: #1F1300; font-weight: 800; font-size: 14px; min-height: 40px; padding: 0 10px; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+#prueba .opciones { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+</style>
+</head>
+<body data-pantalla="cargando">
+
+<div id="actualizar" class="banda" hidden>Hay una versión nueva de la app <button type="button" id="btn-actualizar">Actualizar</button></div>
+
+<!-- Pantalla inicial: cargar el packing list y la referencia -->
+<section id="p-inicio" class="pantalla" hidden>
+  <header class="cab"><h1>Recepción de mercadería</h1></header>
+  <main class="contenido">
+    <div class="paso">
+      <h2>1 · Packing list</h2>
+      <p>Excel del proveedor (.xls o .xlsx), con una fila por caja.</p>
+      <button type="button" class="btn grande" id="btn-archivo">Cargar packing list</button>
+      <input type="file" id="archivo" hidden
+        accept=".xls,.xlsx,.xlsm,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+      <div id="carga" hidden></div>
+    </div>
+    <div class="paso">
+      <h2>2 · Referencia</h2>
+      <div class="campo">
+        <label for="ref">N° o referencia de la recepción</label>
+        <input id="ref" type="text" maxlength="60" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ej.: PKL 602622">
+      </div>
+    </div>
+    <button type="button" class="btn ok grande" id="btn-iniciar" disabled>Iniciar recepción</button>
+    <button type="button" class="btn sec" id="btn-instalar" hidden>Instalar como app</button>
+  </main>
+</section>
+
+<!-- Pantalla principal de escaneo -->
+<section id="p-escaneo" class="pantalla" hidden>
+  <header class="cab">
+    <div class="ref" id="e-ref"></div>
+    <div class="tot" id="e-tot"></div>
+  </header>
+  <main class="escaneo" aria-live="polite">
+    <div class="panel-pallet vacio" id="e-panel">
+      <div class="rot">PALLET</div>
+      <div class="num" id="e-num">Escanee la primera caja</div>
+      <div class="etq" id="e-etq" hidden></div>
+    </div>
+    <div class="prod" id="e-prod" hidden>
+      <div class="desc" id="e-desc"></div>
+      <div class="caja" id="e-caja"></div>
+    </div>
+    <div class="stats" id="e-stats" hidden>
+      <div class="stat">
+        <div class="t" id="e-pal-t">Pallet</div>
+        <div class="v" id="e-pal-v"></div>
+        <div class="s" id="e-pal-s"></div>
+      </div>
+      <div class="stat" id="e-sku">
+        <div class="t">Producto</div>
+        <div class="v" id="e-sku-v"></div>
+        <div class="barra" id="e-sku-barra"><i></i></div>
+      </div>
+    </div>
+    <div class="espejo" id="espejo"><span class="led"></span><span class="txt" id="espejo-txt"></span></div>
+    <div class="acciones">
+      <button type="button" class="btn coral ancho" id="btn-lleno">Pallet lleno / Nuevo pallet<small id="btn-lleno-sub"></small></button>
+      <button type="button" class="btn sec" id="btn-deshacer">Deshacer último</button>
+      <button type="button" class="btn" id="btn-resumen">Resumen</button>
+    </div>
+  </main>
+</section>
+
+<!-- Resumen: pallets, avance y no identificados -->
+<section id="p-resumen" class="pantalla" hidden>
+  <header class="cab">
+    <button type="button" class="volver" data-volver>← Escanear</button>
+    <h1 id="r-titulo">Resumen</h1>
+  </header>
+  <nav class="tabs">
+    <button type="button" class="tab activa" data-tab="pallets">Pallets</button>
+    <button type="button" class="tab" data-tab="avance">Avance</button>
+    <button type="button" class="tab" data-tab="noident">No ident. <span class="cuenta" id="r-cuenta" hidden></span></button>
+  </nav>
+  <div class="lista" id="r-lista"></div>
+  <div class="pie-fijo">
+    <button type="button" class="btn ok grande" id="btn-exportar">Finalizar y exportar</button>
+    <button type="button" class="btn sec" id="btn-cambiar" hidden>Cambiar packing list</button>
+    <div class="nota" id="r-nota"></div>
+  </div>
+</section>
+
+<!-- Detalle de un pallet -->
+<section id="p-detalle" class="pantalla" hidden>
+  <header class="cab">
+    <button type="button" class="volver" data-volver>← Resumen</button>
+    <h1 id="d-titulo"></h1>
+  </header>
+  <div class="lista" id="d-lista"></div>
+  <div class="pie-fijo" id="d-pie"></div>
+</section>
+
+<!-- Otra ventana tiene la recepción abierta -->
+<section id="p-bloqueo" class="pantalla" hidden>
+  <header class="cab"><h1>Recepción de mercadería</h1></header>
+  <main class="contenido">
+    <div class="paso">
+      <h2 id="b-titulo">La app ya está abierta en otra ventana</h2>
+      <p id="b-texto">Para no mezclar lecturas, solo una ventana puede trabajar la recepción. Cierre la otra (Chrome o la app instalada) y toque Reintentar.</p>
+      <button type="button" class="btn grande" id="btn-reintentar">Reintentar</button>
+    </div>
+  </main>
+</section>
+
+<!-- Avisos a pantalla completa -->
+<div id="capa-nuevo" class="capa azul" hidden>
+  <div class="t1">NUEVO PALLET N°</div>
+  <div class="t2" id="cn-num"></div>
+  <div class="t3" id="cn-sku"></div>
+  <div class="t4">Arme un pallet nuevo para este producto.</div>
+  <div class="pie">Toque o escanee la siguiente caja para seguir</div>
+</div>
+<div id="capa-error" class="capa roja" hidden>
+  <div class="t1" id="ce-titulo"></div>
+  <div class="cod" id="ce-cod"></div>
+  <div class="t4" id="ce-texto"></div>
+  <div class="pie">Toque la pantalla para continuar</div>
+</div>
+<div id="capa-repetida" class="capa ambar" hidden>
+  <div class="t1">CAJA YA ESCANEADA</div>
+  <div class="cod" id="cr-cod"></div>
+  <div class="t3" id="cr-sku"></div>
+  <div class="t4" id="cr-texto"></div>
+  <div class="btns">
+    <button type="button" class="btn grande peligro" data-r="descartar">Descartar</button>
+    <button type="button" class="btn sec" data-r="registrar">Registrar igual</button>
+  </div>
+</div>
+
+<div id="modal" class="modal" hidden><div class="hoja" id="modal-hoja"></div></div>
+<div id="toast" class="toast" hidden></div>
+<div id="prueba" hidden></div>
+
+<form id="form-lectura" autocomplete="off">
+  <input id="lectura" inputmode="none" autocomplete="off" autocorrect="off" autocapitalize="off"
+    spellcheck="false" enterkeyhint="done" aria-label="Lectura del escáner">
+</form>
+
+<script>
+'use strict';
+
+/* =====================================================================
+   Utilidades
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g,
+  (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const FMT_KG = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const FMT_N = new Intl.NumberFormat('es-CL');
+const kg = (x) => FMT_KG.format(x || 0);
+const n = (x) => FMT_N.format(x || 0);
+const r3 = (x) => Math.round(x * 1000) / 1000;
+const hora = (ts) => new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+const fechaHora = (ts) => new Date(ts).toLocaleString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+const plural = (k, uno, varios) => `${n(k)} ${k === 1 ? uno : varios}`;
+const uid = () => (crypto.randomUUID ? crypto.randomUUID()
+  : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12));
+
+// Clave con la que se compara un código: sin espacios ni caracteres de control, en
+// mayúsculas y, si es numérico, sin ceros a la izquierda (Excel los borra cuando guarda
+// el código como número, y el escáner sí los lee).
+function claveCodigo(v) {
+  if (v == null) return '';
+  let s = String(v).replace(/[\x00-\x1F\x7F]/g, '').trim().toUpperCase();
+  s = s.replace(/^\][A-Z][0-9A-Z]/, '');   // prefijo AIM ("]C1"), si DataWedge lo agrega
+  s = s.replace(/\s+/g, '');
+  if (/^\d+$/.test(s)) s = s.replace(/^0+(?=\d)/, '');
+  return s;
+}
+const normTexto = (v) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const texto = (v) => (v == null ? '' : String(v).replace(/\s+/g, ' ').trim());
+
+// Número desde Excel: acepta 2.01 o textos como "2,01" y "1.471,41".
+function numero(v) {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : NaN;
+  let s = texto(v).replace(/\s/g, '').replace(/kgs?$/i, '');
+  if (!s) return NaN;
+  if (s.includes(',') && s.includes('.')) {
+    s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  } else if (s.includes(',')) s = s.replace(',', '.');
+  const x = Number(s);
+  return Number.isFinite(x) ? x : NaN;
+}
+
+/* =====================================================================
+   Sonido y vibración: uno distinto para OK, pallet nuevo, aviso y error
+   ===================================================================== */
+let audio = null;
+function desbloquearAudio() {
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+  } catch { /* sin audio: queda la vibración */ }
+}
+['pointerdown', 'keydown'].forEach((ev) => window.addEventListener(ev, desbloquearAudio, { capture: true, passive: true }));
+
+const SONIDOS = {
+  ok: ['square', [[1568, 0.09]]],
+  nuevo: ['square', [[784, 0.13], [0, 0.05], [1047, 0.13], [0, 0.05], [1568, 0.3]]],
+  aviso: ['square', [[880, 0.17], [0, 0.07], [587, 0.26]]],
+  error: ['sawtooth', [[196, 0.3], [0, 0.08], [196, 0.38]]],
+};
+const VIBRACION = { ok: [60], nuevo: [180, 90, 180, 90, 420], aviso: [260, 120, 260], error: [500, 150, 500] };
+
+function avisar(tipo) {
+  try { navigator.vibrate && navigator.vibrate(VIBRACION[tipo]); } catch { /* no vibra */ }
+  if (!audio || audio.state !== 'running') return;
+  const [onda, notas] = SONIDOS[tipo];
+  let t = audio.currentTime + 0.01;
+  for (const [f, d] of notas) {
+    if (f) {
+      const o = audio.createOscillator();
+      const g = audio.createGain();
+      o.type = onda;
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.35, t + 0.01);
+      g.gain.setValueAtTime(0.35, t + d - 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g).connect(audio.destination);
+      o.start(t);
+      o.stop(t + d + 0.02);
+    }
+    t += d;
+  }
+}
+
+/* =====================================================================
+   IndexedDB: cada cambio es UNA transacción atómica con durabilidad
+   estricta. La pantalla confirma recién cuando el disco confirmó.
+   ===================================================================== */
+const BD = { nombre: 'recepcion-tc27', version: 1, db: null };
+const TIENDAS = ['meta', 'cajas', 'pallets', 'escaneos', 'noident'];
+
+function abrirBD() {
+  return new Promise((ok, mal) => {
+    const req = indexedDB.open(BD.nombre, BD.version);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      db.createObjectStore('meta', { keyPath: 'clave' });
+      db.createObjectStore('cajas', { keyPath: 'codigo' });
+      db.createObjectStore('pallets', { keyPath: 'num' });
+      db.createObjectStore('escaneos', { keyPath: 'seq' });
+      db.createObjectStore('noident', { keyPath: 'seq' });
+    };
+    req.onsuccess = () => {
+      const db = req.result;
+      db.onversionchange = () => db.close();
+      ok(db);
+    };
+    req.onerror = () => mal(req.error);
+    req.onblocked = () => mal(new Error('La base de datos está bloqueada por otra ventana.'));
+  });
+}
+
+// ops: [[tienda, 'put' | 'del' | 'clear', dato], ...]
+function escribir(ops) {
+  return new Promise((ok, mal) => {
+    let tx;
+    try {
+      tx = BD.db.transaction([...new Set(ops.map((o) => o[0]))], 'readwrite', { durability: 'strict' });
+      for (const [tienda, accion, dato] of ops) {
+        const t = tx.objectStore(tienda);
+        if (accion === 'put') t.put(dato);
+        else if (accion === 'del') t.delete(dato);
+        else if (accion === 'clear') t.clear();
+      }
+    } catch (e) {
+      try { tx && tx.abort(); } catch { /* ya abortada */ }
+      mal(e);
+      return;
+    }
+    tx.oncomplete = () => ok();
+    tx.onerror = () => mal(tx.error || new Error('Error al guardar'));
+    tx.onabort = () => mal(tx.error || new Error('Se canceló el guardado'));
+  });
+}
+
+function leerTienda(tienda) {
+  return new Promise((ok, mal) => {
+    const req = BD.db.transaction(tienda, 'readonly').objectStore(tienda).getAll();
+    req.onsuccess = () => ok(req.result);
+    req.onerror = () => mal(req.error);
+  });
+}
+
+/* =====================================================================
+   Estado en memoria (espejo de IndexedDB)
+   ===================================================================== */
+const E = {
+  rec: null,               // la recepción: ref, archivo, mapeo, productos, totales
+  cajas: new Map(),        // código → caja del packing list
+  productos: new Map(),    // sku → producto
+  pallets: new Map(),      // n° → pallet
+  escaneos: [],            // en orden de lectura (seq)
+  noident: [],
+  seq: 0,
+  // derivados
+  porPallet: new Map(),    // n° → { cajas, kg }
+  porSku: new Map(),       // sku → { cajas, kg, pallets: Set }
+  porCodigo: new Map(),    // código → [escaneos]
+};
+
+// Estado de la interfaz
+let pantalla = 'cargando';
+let profundidad = 0;           // 0 escaneo · 1 resumen · 2 detalle (para el botón atrás de Android)
+let pestana = 'pallets';
+let detalleNum = null;
+const seleccion = new Set();
+
+function recalcular() {
+  E.porPallet = new Map();
+  E.porSku = new Map();
+  E.porCodigo = new Map();
+  for (const num of E.pallets.keys()) E.porPallet.set(num, { cajas: 0, kg: 0 });
+  for (const s of E.escaneos) {
+    const p = E.porPallet.get(s.pallet) || { cajas: 0, kg: 0 };
+    p.cajas++; p.kg = r3(p.kg + s.kg);
+    E.porPallet.set(s.pallet, p);
+    const k = E.porSku.get(s.sku) || { cajas: 0, kg: 0, pallets: new Set() };
+    k.cajas++; k.kg = r3(k.kg + s.kg); k.pallets.add(s.pallet);
+    E.porSku.set(s.sku, k);
+    const c = E.porCodigo.get(s.codigo) || [];
+    c.push(s);
+    E.porCodigo.set(s.codigo, c);
+  }
+}
+
+const ultimoEscaneo = () => E.escaneos[E.escaneos.length - 1] || null;
+function palletAbierto(sku, excepto) {
+  for (const p of E.pallets.values()) if (p.sku === sku && p.estado === 'ABIERTO' && p.num !== excepto) return p.num;
+  return null;
+}
+// El número siguiente al mayor que existe: si se borra el último pallet, su número se
+// reutiliza; si se borra uno intermedio, queda el hueco (ya puede tener etiqueta física).
+function siguienteNumero() {
+  let max = 0;
+  for (const num of E.pallets.keys()) if (num > max) max = num;
+  return max + 1;
+}
+const totalRecibido = () => E.escaneos.reduce((a, s) => ({ cajas: a.cajas + 1, kg: r3(a.kg + s.kg) }), { cajas: 0, kg: 0 });
+const producto = (sku) => E.productos.get(sku) || { sku, desc: sku, esperadas: 0, kgEsperados: 0 };
+const nombreProducto = (sku) => {
+  const p = producto(sku);
+  return p.desc && p.desc !== p.sku ? `${p.sku} · ${p.desc}` : p.sku;
+};
+
+async function cargarEstado() {
+  const [metas, cajas, pallets, escaneos, noident] = await Promise.all(TIENDAS.map(leerTienda));
+  E.rec = metas.find((m) => m.clave === 'recepcion') || null;
+  E.cajas = new Map(cajas.map((c) => [c.codigo, c]));
+  E.productos = new Map((E.rec ? E.rec.productos : []).map((p) => [p.sku, p]));
+  E.pallets = new Map(pallets.map((p) => [p.num, p]));
+  E.escaneos = escaneos.sort((a, b) => a.seq - b.seq);
+  E.noident = noident.sort((a, b) => a.seq - b.seq);
+  E.seq = [...E.escaneos, ...E.noident].reduce((m, s) => Math.max(m, s.seq), 0);
+  recalcular();
+}
+
+/* =====================================================================
+   Packing list: detección de hoja, encabezados y columnas
+   ===================================================================== */
+let promesaXLSX = null;
+function cargarLibreriaExcel() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  promesaXLSX = promesaXLSX || new Promise((ok, mal) => {
+    const s = document.createElement('script');
+    s.src = 'xlsx.full.min.js';
+    s.onload = () => (window.XLSX ? ok(window.XLSX) : mal(new Error('No se pudo cargar la librería de Excel')));
+    s.onerror = () => { promesaXLSX = null; mal(new Error('No se pudo cargar la librería de Excel')); };
+    document.head.appendChild(s);
+  });
+  return promesaXLSX;
+}
+
+// Columnas que usa la app. La letra es la del formato "Nro Packing List" (E, Q, AZ); los
+// sinónimos permiten encontrarlas si el proveedor mueve o renombra columnas.
+const CAMPOS = {
+  codigo: { etiqueta: 'N° de caja (lo que lee el escáner)', obligatorio: true, letra: 'E',
+    sinonimos: ['num caja', 'numero caja', 'numero de caja', 'nro caja', 'n caja', 'no caja', 'codigo caja',
+      'codigo de barra', 'codigo de barras', 'codigo barra', 'cod barra', 'barcode', 'sscc', 'ean', 'ean13', 'dun14', 'gtin'] },
+  kilos: { etiqueta: 'Kilos de la caja', obligatorio: true, letra: 'Q',
+    sinonimos: ['kilos', 'kg', 'kgs', 'kilos caja', 'kg caja', 'peso caja', 'peso', 'peso neto', 'net weight'] },
+  desc: { etiqueta: 'Producto (SKU)', obligatorio: true, letra: 'AZ',
+    sinonimos: ['descripcion', 'descripcion producto', 'producto', 'nombre producto', 'glosa', 'detalle', 'description'] },
+  sku: { etiqueta: 'Código SKU (opcional)', obligatorio: false, letra: null,
+    sinonimos: ['sku', 'codigo sku', 'cod sku'] },
+};
+const CLAVE_MAPEO = 'recepcion.mapeo';
+
+function celda(ws, r, c) {
+  const x = ws[XLSX.utils.encode_cell({ r, c })];
+  if (!x || x.t === 'e' || x.t === 'z') return null;
+  return x.v;
+}
+function titulosDeFila(ws, r) {
+  const rango = XLSX.utils.decode_range(ws['!ref']);
+  const t = [];
+  for (let c = rango.s.c; c <= rango.e.c; c++) {
+    const v = texto(celda(ws, r, c));
+    if (v) t.push({ c, letra: XLSX.utils.encode_col(c), titulo: v, norm: normTexto(v) });
+  }
+  return t;
+}
+function puntaje(norm, sinonimos, guardado) {
+  if (guardado && norm === guardado) return 2000;
+  let mejor = 0;
+  sinonimos.forEach((s, i) => {
+    if (norm === s) mejor = Math.max(mejor, 1000 - i);
+    else if (norm.startsWith(s + ' ') || norm.endsWith(' ' + s)) mejor = Math.max(mejor, 500 - i);
+    else if ((' ' + norm + ' ').includes(' ' + s + ' ')) mejor = Math.max(mejor, 100 - i);
+  });
+  return mejor;
+}
+function mapearFila(titulos, guardado) {
+  const mapeo = {};
+  let total = 0;
+  for (const [campo, def] of Object.entries(CAMPOS)) {
+    let mejor = null;
+    for (const t of titulos) {
+      const p = puntaje(t.norm, def.sinonimos, guardado && guardado[campo] ? normTexto(guardado[campo]) : null);
+      if (p > 0 && (!mejor || p > mejor.p)) mejor = { ...t, p };
+    }
+    mapeo[campo] = mejor ? { c: mejor.c, letra: mejor.letra, titulo: mejor.titulo } : null;
+    if (mejor && def.obligatorio) total += mejor.p;
+  }
+  return { mapeo, total };
+}
+function leerGuardado() {
+  try { return JSON.parse(localStorage.getItem(CLAVE_MAPEO)) || null; } catch { return null; }
+}
+
+// Busca, en todas las hojas y en sus primeras 30 filas, la que mejor parece encabezado.
+function detectar(wb, soloHoja) {
+  const guardado = leerGuardado();
+  let mejor = null;
+  for (const hoja of soloHoja ? [soloHoja] : wb.SheetNames) {
+    const ws = wb.Sheets[hoja];
+    if (!ws || !ws['!ref']) continue;
+    const rango = XLSX.utils.decode_range(ws['!ref']);
+    for (let r = rango.s.r; r <= Math.min(rango.e.r, rango.s.r + 30); r++) {
+      const titulos = titulosDeFila(ws, r);
+      if (!titulos.length) continue;
+      const { mapeo, total } = mapearFila(titulos, guardado);
+      if (!mejor || total > mejor.total) mejor = { hoja, fila: r, mapeo, total, titulos };
+    }
+  }
+  if (!mejor) return null;
+  // Si un campo obligatorio no apareció por nombre, se usa la letra del formato conocido.
+  for (const [campo, def] of Object.entries(CAMPOS)) {
+    if (mejor.mapeo[campo] || !def.letra) continue;
+    const t = mejor.titulos.find((x) => x.letra === def.letra);
+    if (t) mejor.mapeo[campo] = { c: t.c, letra: t.letra, titulo: t.titulo };
+  }
+  return mejor;
+}
+
+// Lee las filas de datos: una fila = una caja. El producto (SKU) agrupa las cajas.
+function leerPacking(ws, filaEnc, m) {
+  const rango = XLSX.utils.decode_range(ws['!ref']);
+  const cajas = new Map();
+  const productos = new Map();
+  const repetidos = [];
+  const sinKilos = [];
+  let sinCodigo = 0, sinProducto = 0;
+  for (let r = filaEnc + 1; r <= rango.e.r; r++) {
+    const codigo = claveCodigo(celda(ws, r, m.codigo.c));
+    const vKilos = celda(ws, r, m.kilos.c);
+    const desc = texto(celda(ws, r, m.desc.c));
+    if (!codigo || /^TOTAL/.test(codigo)) {
+      if (!codigo && (desc || vKilos != null)) sinCodigo++;
+      continue;
+    }
+    const skuTxt = m.sku ? texto(celda(ws, r, m.sku.c)) : '';
+    if (!skuTxt && !desc) sinProducto++;
+    const nombre = skuTxt || desc || '(sin descripción)';
+    const clave = normTexto(nombre) || nombre;
+    let prod = productos.get(clave);
+    if (!prod) {
+      prod = { sku: nombre, desc: desc || nombre, orden: productos.size, esperadas: 0, kgEsperados: 0 };
+      productos.set(clave, prod);
+    }
+    const kilos = numero(vKilos);
+    if (!Number.isFinite(kilos)) sinKilos.push(r + 1);
+    const kgCaja = Number.isFinite(kilos) ? kilos : 0;
+    prod.esperadas++;
+    prod.kgEsperados = r3(prod.kgEsperados + kgCaja);
+    const previa = cajas.get(codigo);
+    if (previa) {
+      previa.esperadas++;
+      repetidos.push(`${codigo} (filas ${previa.fila} y ${r + 1}${previa.sku !== prod.sku ? ', productos distintos' : ''})`);
+      continue;
+    }
+    cajas.set(codigo, { codigo, sku: prod.sku, kg: kgCaja, fila: r + 1, esperadas: 1 });
+  }
+  const lista = [...productos.values()];
+  const avisos = [];
+  if (repetidos.length) avisos.push(`N° de caja repetido en el packing list: ${repetidos.slice(0, 5).join('; ')}${repetidos.length > 5 ? ` y ${repetidos.length - 5} más` : ''}. Esa caja se podrá escanear tantas veces como aparece.`);
+  if (sinKilos.length) avisos.push(`${plural(sinKilos.length, 'fila', 'filas')} sin kilos válidos (filas ${sinKilos.slice(0, 8).join(', ')}${sinKilos.length > 8 ? '…' : ''}): cuentan como 0 kg.`);
+  if (sinCodigo) avisos.push(`${plural(sinCodigo, 'fila', 'filas')} sin N° de caja: no se consideran.`);
+  if (sinProducto) avisos.push(`${plural(sinProducto, 'fila', 'filas')} sin producto: quedan como "(sin descripción)".`);
+  return {
+    cajas, productos: lista, avisos,
+    totalCajas: lista.reduce((a, p) => a + p.esperadas, 0),
+    totalKg: r3(lista.reduce((a, p) => a + p.kgEsperados, 0)),
+  };
+}
+
+/* =====================================================================
+   Pantalla de inicio
+   ===================================================================== */
+const PL = { archivo: '', wb: null, hoja: '', fila: 0, mapeo: null, datos: null, error: '' };
+
+async function procesarArchivo(file) {
+  const carga = $('#carga');
+  carga.hidden = false;
+  carga.innerHTML = '<p>Leyendo el archivo…</p>';
+  $('#btn-iniciar').disabled = true;
+  try {
+    await cargarLibreriaExcel();
+    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+    const det = detectar(wb);
+    Object.assign(PL, { archivo: file.name, wb, hoja: det ? det.hoja : wb.SheetNames[0], fila: det ? det.fila : 0,
+      mapeo: det ? det.mapeo : {}, datos: null, error: '' });
+    if (!$('#ref').value.trim()) $('#ref').value = file.name.replace(/\.[^.]+$/, '').slice(0, 60);
+    releer();
+  } catch (e) {
+    Object.assign(PL, { wb: null, datos: null, error: e.message || String(e) });
+    carga.innerHTML = `<ul class="avisos mal"><li>No se pudo leer <b>${esc(file.name)}</b>: ${esc(PL.error)}</li></ul>`;
+  }
+}
+
+function releer() {
+  PL.datos = null;
+  PL.error = '';
+  const falta = Object.entries(CAMPOS).filter(([k, d]) => d.obligatorio && !PL.mapeo[k]).map(([, d]) => d.etiqueta);
+  if (falta.length) PL.error = `Falta elegir: ${falta.join(', ')}.`;
+  else {
+    PL.datos = leerPacking(PL.wb.Sheets[PL.hoja], PL.fila, PL.mapeo);
+    if (!PL.datos.totalCajas) PL.error = 'No se encontraron cajas con esas columnas.';
+  }
+  pintarCarga();
+}
+
+function pintarCarga() {
+  const ws = PL.wb.Sheets[PL.hoja];
+  const titulos = ws && ws['!ref'] ? titulosDeFila(ws, PL.fila) : [];
+  const opcionesHoja = PL.wb.SheetNames.map((h) => `<option ${h === PL.hoja ? 'selected' : ''}>${esc(h)}</option>`).join('');
+  const selector = (campo) => {
+    const def = CAMPOS[campo];
+    const actual = PL.mapeo[campo];
+    const ops = titulos.map((t) => `<option value="${t.c}" ${actual && actual.c === t.c ? 'selected' : ''}>${esc(t.letra)} · ${esc(t.titulo)}</option>`).join('');
+    const vacio = def.obligatorio ? `<option value="" ${actual ? '' : 'selected'}>— elegir columna —</option>`
+      : `<option value="" ${actual ? '' : 'selected'}>— igual al producto —</option>`;
+    return `<div class="campo"><label for="m-${campo}">${esc(def.etiqueta)}</label><select id="m-${campo}" data-campo="${campo}">${vacio}${ops}</select></div>`;
+  };
+  const d = PL.datos;
+  let html = `<div class="archivo">${esc(PL.archivo)}</div>
+    <div class="campo"><label for="m-hoja">Hoja</label><select id="m-hoja">${opcionesHoja}</select></div>
+    <p>Encabezados en la fila ${PL.fila + 1}.</p>
+    ${selector('codigo')}${selector('kilos')}${selector('desc')}${selector('sku')}`;
+  if (PL.error) html += `<ul class="avisos mal"><li>${esc(PL.error)}</li></ul>`;
+  if (d) {
+    html += `<div class="cifras">
+      <div class="cifra"><b>${n(d.totalCajas)}</b><span>cajas</span></div>
+      <div class="cifra"><b>${n(d.productos.length)}</b><span>productos</span></div>
+      <div class="cifra"><b>${kg(d.totalKg)}</b><span>kg</span></div></div>`;
+    if (d.avisos.length) html += `<ul class="avisos">${d.avisos.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>`;
+    html += `<table class="tabla"><thead><tr><th>Producto</th><th class="n">Cajas</th><th class="n">Kg</th></tr></thead><tbody>${
+      d.productos.map((p) => `<tr><td>${esc(p.sku)}${p.desc !== p.sku ? `<br><small>${esc(p.desc)}</small>` : ''}</td><td class="n">${n(p.esperadas)}</td><td class="n">${kg(p.kgEsperados)}</td></tr>`).join('')
+    }</tbody></table>`;
+  }
+  const carga = $('#carga');
+  carga.hidden = false;
+  carga.innerHTML = html;
+  validarInicio();
+}
+
+function validarInicio() {
+  $('#btn-iniciar').disabled = !(PL.datos && !PL.error && $('#ref').value.trim());
+}
+
+async function iniciarRecepcion() {
+  const ref = $('#ref').value.trim();
+  if (!PL.datos || PL.error || !ref) return validarInicio();
+  const d = PL.datos;
+  const rec = {
+    clave: 'recepcion', id: uid(), ref, creada: Date.now(), exportada: null,
+    archivo: PL.archivo, hoja: PL.hoja, filaEncabezado: PL.fila + 1, mapeo: PL.mapeo,
+    productos: d.productos, totalCajas: d.totalCajas, totalKg: d.totalKg,
+  };
+  const ops = TIENDAS.map((t) => [t, 'clear']);
+  ops.push(['meta', 'put', rec]);
+  for (const c of d.cajas.values()) ops.push(['cajas', 'put', c]);
+  $('#btn-iniciar').disabled = true;
+  try {
+    await escribir(ops);
+  } catch (e) {
+    $('#btn-iniciar').disabled = false;
+    return toast('No se pudo guardar la recepción: ' + (e.message || e), 'mal');
+  }
+  try {
+    localStorage.setItem(CLAVE_MAPEO, JSON.stringify(Object.fromEntries(
+      Object.entries(PL.mapeo).map(([k, v]) => [k, v ? v.titulo : null]))));
+  } catch { /* sin localStorage: se vuelve a detectar la próxima vez */ }
+  Object.assign(E, { rec, cajas: d.cajas, productos: new Map(d.productos.map((p) => [p.sku, p])),
+    pallets: new Map(), escaneos: [], noident: [], seq: 0 });
+  recalcular();
+  PL.wb = null;
+  pedirPersistencia();
+  irA('escaneo');
+  mantenerPantalla();
+}
+
+/* =====================================================================
+   Lógica central: escaneos y pallets
+   ===================================================================== */
+let cola = Promise.resolve();
+let bloqueo = null;   // diálogo abierto: mientras exista, las lecturas se rechazan
+
+// Todas las operaciones que cambian datos pasan por esta cola, en orden.
+function encolar(fn) {
+  cola = cola.then(fn).catch((e) => {
+    console.error(e);
+    toast('Error inesperado: ' + (e.message || e), 'mal');
+  });
+  return cola;
+}
+
+function recibirLectura(bruto) {
+  const leido = String(bruto ?? '').replace(/[\r\n\t]+/g, '').trim();
+  if (!leido || !E.rec) return;
+  if (bloqueo) return rechazarLectura();
+  ocultarNuevo();
+  encolar(() => procesarLectura(leido));
+}
+
+function rechazarLectura() {
+  avisar('error');
+  toast('Lectura rechazada: responda el mensaje en pantalla y vuelva a escanear esa caja.', 'mal');
+  const visible = [...document.querySelectorAll('.capa, #modal')].find((x) => !x.hidden);
+  if (visible) {
+    const blanco = visible.id === 'modal' ? $('#modal-hoja') : visible;
+    blanco.classList.remove('sacude');
+    void blanco.offsetWidth;
+    blanco.classList.add('sacude');
+  }
+}
+
+async function procesarLectura(leido) {
+  if (!E.rec) return;   // la recepción se borró mientras la lectura esperaba turno
+  if (pantalla !== 'escaneo') volverAEscaneo();
+  const codigo = claveCodigo(leido);
+  const caja = E.cajas.get(codigo);
+
+  if (!caja) {
+    const reg = { seq: E.seq + 1, uid: uid(), ts: Date.now(), leido };
+    try {
+      await escribir([['noident', 'put', reg]]);
+    } catch (e) {
+      return falloGuardado(e, leido);
+    }
+    E.seq = reg.seq;
+    E.noident.push(reg);
+    pintarEscaneo();
+    avisar('error');
+    await mostrarError('CÓDIGO NO ENCONTRADO', leido,
+      'No está en el packing list. La caja NO se registró: sepárela y revise la etiqueta.');
+    return;
+  }
+
+  // Una caja del packing list se espera una vez (o tantas como filas tenga su número).
+  const previas = E.porCodigo.get(codigo) || [];
+  let repetida = false;
+  if (previas.length >= caja.esperadas) {
+    avisar('aviso');
+    if (!(await decidirRepetida(caja, previas))) {
+      toast(`Caja ${caja.codigo} descartada: no se registró.`);
+      return;
+    }
+    repetida = true;
+  }
+
+  let num = palletAbierto(caja.sku);
+  const nuevo = num == null;
+  if (nuevo) num = siguienteNumero();
+  const lectura = { seq: E.seq + 1, uid: uid(), ts: Date.now(), codigo, leido, sku: caja.sku, kg: caja.kg, pallet: num, repetida };
+  const ops = [['escaneos', 'put', lectura]];
+  const pallet = nuevo ? { num, sku: caja.sku, estado: 'ABIERTO', creado: lectura.ts, cerrado: null } : null;
+  if (pallet) ops.push(['pallets', 'put', pallet]);
+  try {
+    await escribir(ops);
+  } catch (e) {
+    return falloGuardado(e, leido);
+  }
+  // Recién aquí la caja quedó en disco.
+  E.seq = lectura.seq;
+  E.escaneos.push(lectura);
+  if (pallet) E.pallets.set(num, pallet);
+  recalcular();
+  pintarEscaneo({ destello: !nuevo });
+  if (nuevo) {
+    avisar('nuevo');
+    mostrarNuevo(num, caja.sku);
+  } else {
+    avisar('ok');
+  }
+}
+
+async function falloGuardado(e, leido) {
+  console.error(e);
+  avisar('error');
+  await mostrarError('NO SE PUDO GUARDAR', leido,
+    `La caja NO quedó registrada (${e && e.message ? e.message : 'error de almacenamiento'}). Vuelva a escanearla.`);
+}
+
+// "Pallet lleno / Nuevo pallet": cierra el pallet abierto del último SKU escaneado.
+async function palletLleno() {
+  const ult = ultimoEscaneo();
+  if (!ult) return toast('Todavía no hay cajas escaneadas.');
+  const num = palletAbierto(ult.sku);
+  if (num == null) return toast(`${nombreProducto(ult.sku)} no tiene un pallet abierto.`);
+  await cerrarPallet(num);
+}
+
+async function cerrarPallet(num) {
+  const p = E.pallets.get(num);
+  const st = E.porPallet.get(num) || { cajas: 0, kg: 0 };
+  const si = await confirmar({
+    titulo: `¿Cerrar el pallet N° ${num}?`,
+    cuerpo: `<b>${esc(nombreProducto(p.sku))}</b><br>${plural(st.cajas, 'caja', 'cajas')} · ${kg(st.kg)} kg<br><br>La próxima caja de este producto abrirá un pallet nuevo.`,
+    si: 'Cerrar pallet', no: 'Cancelar',
+  });
+  if (si && await cambiarEstados([[num, 'CERRADO']])) toast(`Pallet N° ${num} cerrado.`);
+}
+
+async function reabrirPallet(num) {
+  const p = E.pallets.get(num);
+  const otro = palletAbierto(p.sku, num);
+  const si = await confirmar({
+    titulo: `¿Reabrir el pallet N° ${num}?`,
+    cuerpo: `<b>${esc(nombreProducto(p.sku))}</b><br>Las próximas cajas de este producto irán a este pallet.` +
+      (otro != null ? `<br><br>El pallet N° ${otro} de este producto está abierto: <b>se cerrará</b>.` : ''),
+    si: 'Reabrir pallet', no: 'Cancelar',
+  });
+  if (!si) return;
+  const cambios = [[num, 'ABIERTO']];
+  if (otro != null) cambios.push([otro, 'CERRADO']);
+  if (await cambiarEstados(cambios)) toast(otro != null ? `Pallet N° ${num} abierto; N° ${otro} cerrado.` : `Pallet N° ${num} abierto.`);
+}
+
+async function cambiarEstados(cambios) {
+  const ahora = Date.now();
+  const nuevos = cambios.map(([num, estado]) => ({ ...E.pallets.get(num), estado, cerrado: estado === 'CERRADO' ? ahora : null }));
+  try {
+    await escribir(nuevos.map((p) => ['pallets', 'put', p]));
+  } catch (e) {
+    avisar('error');
+    toast('No se pudo guardar el cambio: ' + (e.message || e), 'mal');
+    return false;
+  }
+  for (const p of nuevos) E.pallets.set(p.num, p);
+  recalcular();
+  repintar();
+  return true;
+}
+
+// Quita escaneos y elimina los pallets que quedan vacíos, en una sola transacción.
+async function quitarEscaneos(seqs) {
+  const quitar = new Set(seqs);
+  const quedan = E.escaneos.filter((s) => !quitar.has(s.seq));
+  const afectados = new Set(E.escaneos.filter((s) => quitar.has(s.seq)).map((s) => s.pallet));
+  const vacios = [...afectados].filter((num) => !quedan.some((s) => s.pallet === num));
+  const ops = [...quitar].map((seq) => ['escaneos', 'del', seq]).concat(vacios.map((num) => ['pallets', 'del', num]));
+  await escribir(ops);
+  E.escaneos = quedan;
+  for (const num of vacios) E.pallets.delete(num);
+  recalcular();
+  return vacios;
+}
+
+async function deshacerUltimo() {
+  const ult = ultimoEscaneo();
+  if (!ult) return toast('No hay cajas para deshacer.');
+  const st = E.porPallet.get(ult.pallet) || { cajas: 0 };
+  const queda = st.cajas - 1;
+  const si = await confirmar({
+    titulo: '¿Deshacer la última caja?',
+    cuerpo: `Caja <b>${esc(ult.codigo)}</b> · ${kg(ult.kg)} kg<br><b>${esc(nombreProducto(ult.sku))}</b><br>Sale del pallet <b>N° ${ult.pallet}</b>` +
+      (queda === 0 ? ', que queda vacío y se elimina.' : ` (quedan ${plural(queda, 'caja', 'cajas')}).`),
+    si: 'Deshacer', no: 'Cancelar', peligro: true,
+  });
+  if (!si) return;
+  try {
+    await quitarEscaneos([ult.seq]);
+  } catch (e) {
+    avisar('error');
+    return toast('No se pudo deshacer: ' + (e.message || e), 'mal');
+  }
+  repintar();
+  toast(queda === 0 ? `Caja ${ult.codigo} quitada. Pallet N° ${ult.pallet} eliminado.` : `Caja ${ult.codigo} quitada del pallet N° ${ult.pallet}.`);
+}
+
+async function eliminarCajas(num, seqs) {
+  const total = (E.porPallet.get(num) || { cajas: 0 }).cajas;
+  const vacia = seqs.length >= total;
+  const si = await confirmar({
+    titulo: `¿Eliminar ${plural(seqs.length, 'caja', 'cajas')}?`,
+    cuerpo: `Del pallet <b>N° ${num}</b>. Dejan de contar como recibidas.` + (vacia ? '<br><br>El pallet queda vacío y <b>se elimina</b>.' : ''),
+    si: 'Eliminar', no: 'Cancelar', peligro: true,
+  });
+  if (!si) return;
+  try {
+    await quitarEscaneos(seqs);
+  } catch (e) {
+    avisar('error');
+    return toast('No se pudo eliminar: ' + (e.message || e), 'mal');
+  }
+  seleccion.clear();
+  toast(vacia ? `Pallet N° ${num} eliminado.` : `${plural(seqs.length, 'caja eliminada', 'cajas eliminadas')}.`);
+  if (vacia) history.back(); else repintar();
+}
+
+async function moverCajas(origen, seqs) {
+  const p = E.pallets.get(origen);
+  const destinos = [...E.pallets.values()].filter((x) => x.sku === p.sku && x.num !== origen).sort((a, b) => a.num - b.num);
+  if (!destinos.length) return toast('No hay otro pallet de este producto para mover las cajas.');
+  const destino = await elegir({
+    titulo: `Mover ${plural(seqs.length, 'caja', 'cajas')} a…`,
+    cuerpo: `Pallets de <b>${esc(nombreProducto(p.sku))}</b>`,
+    opciones: destinos.map((d) => {
+      const st = E.porPallet.get(d.num) || { cajas: 0, kg: 0 };
+      return { valor: d.num, texto: `Pallet N° ${d.num}`, sub: `${d.estado} · ${plural(st.cajas, 'caja', 'cajas')} · ${kg(st.kg)} kg` };
+    }),
+  });
+  if (destino == null) return;
+  const total = (E.porPallet.get(origen) || { cajas: 0 }).cajas;
+  const vacia = seqs.length >= total;
+  const si = await confirmar({
+    titulo: `¿Mover al pallet N° ${destino}?`,
+    cuerpo: `${plural(seqs.length, 'caja', 'cajas')} del pallet N° ${origen} al N° ${destino}.` +
+      (vacia ? '<br><br>El pallet N° ' + origen + ' queda vacío y <b>se elimina</b>.' : ''),
+    si: 'Mover', no: 'Cancelar',
+  });
+  if (!si) return;
+  const mover = new Set(seqs);
+  const movidos = E.escaneos.filter((s) => mover.has(s.seq)).map((s) => ({ ...s, pallet: destino }));
+  const ops = movidos.map((s) => ['escaneos', 'put', s]);
+  if (vacia) ops.push(['pallets', 'del', origen]);
+  try {
+    await escribir(ops);
+  } catch (e) {
+    avisar('error');
+    return toast('No se pudieron mover: ' + (e.message || e), 'mal');
+  }
+  const porSeq = new Map(movidos.map((s) => [s.seq, s]));
+  E.escaneos = E.escaneos.map((s) => porSeq.get(s.seq) || s);
+  if (vacia) E.pallets.delete(origen);
+  recalcular();
+  seleccion.clear();
+  toast(`${plural(seqs.length, 'caja movida', 'cajas movidas')} al pallet N° ${destino}.`);
+  if (vacia) history.back(); else repintar();
+}
+
+async function borrarRecepcion() {
+  await escribir(TIENDAS.map((t) => [t, 'clear']));
+  Object.assign(E, { rec: null, cajas: new Map(), productos: new Map(), pallets: new Map(), escaneos: [], noident: [], seq: 0 });
+  recalcular();
+  soltarPantalla();
+  Object.assign(PL, { archivo: '', wb: null, datos: null, error: '' });
+  $('#carga').hidden = true;
+  $('#archivo').value = '';
+  $('#ref').value = '';
+  validarInicio();
+  history.replaceState({ p: 'inicio' }, '');
+  profundidad = 0;
+  irA('inicio', {}, { historial: false });
+}
+
+/* =====================================================================
+   Exportación a Excel
+   ===================================================================== */
+const serialExcel = (ts) => (ts - new Date(ts).getTimezoneOffset() * 60000) / 86400000 + 25569;
+const F_KG = '#,##0.00';
+const F_FECHA = 'dd-mm-yyyy hh:mm:ss';
+const F_COD = '0';
+// Un código solo de dígitos va como número, igual que en el packing list, para que un
+// BUSCARV entre ambos archivos funcione. Con ceros adelante o letras queda como texto.
+const codigoCelda = (c) => (/^[1-9]\d{0,14}$/.test(c) ? Number(c) : c);
+
+// filas: la primera es el encabezado. formatos: { índiceColumna: formato }.
+function armarHoja(filas, anchos, formatos, filasDatos) {
+  const ws = XLSX.utils.aoa_to_sheet(filas);
+  ws['!cols'] = anchos.map((wch) => ({ wch }));
+  for (let r = 1; r < filas.length; r++) {
+    for (const [c, z] of Object.entries(formatos)) {
+      const x = ws[XLSX.utils.encode_cell({ r, c: Number(c) })];
+      if (x && x.t === 'n') x.z = z;
+    }
+  }
+  const ultima = filasDatos == null ? filas.length - 1 : filasDatos;
+  if (ultima >= 1) ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: ultima, c: anchos.length - 1 } }) };
+  return ws;
+}
+
+function estadoDiferencia(esp, rec) {
+  if (rec === esp) return 'OK';
+  return rec < esp ? 'FALTANTE' : 'SOBRANTE';
+}
+
+function construirLibro() {
+  const wb = XLSX.utils.book_new();
+  const prods = [...E.productos.values()].sort((a, b) => a.orden - b.orden);
+  const orden = new Map(prods.map((p, i) => [p.sku, i]));
+  const tot = totalRecibido();
+
+  // 1. Pallets
+  const pallets = [...E.pallets.values()].sort((a, b) => a.num - b.num);
+  const hPallets = [['N° pallet', 'SKU', 'Descripción', 'Cajas', 'Kg', 'Estado']];
+  for (const p of pallets) {
+    const st = E.porPallet.get(p.num) || { cajas: 0, kg: 0 };
+    hPallets.push([p.num, p.sku, producto(p.sku).desc, st.cajas, st.kg, p.estado]);
+  }
+  hPallets.push(['TOTAL GENERAL', plural(pallets.length, 'pallet', 'pallets'), '', tot.cajas, tot.kg, '']);
+  XLSX.utils.book_append_sheet(wb, armarHoja(hPallets, [11, 40, 40, 8, 11, 10], { 4: F_KG }, hPallets.length - 2), 'Pallets');
+
+  // 2. Resumen por SKU
+  const hSku = [['SKU', 'Descripción', 'N° de pallets', 'Pallets usados', 'Cajas', 'Kg']];
+  const conLectura = [...E.porSku.keys()].sort((a, b) => (orden.get(a) ?? 1e9) - (orden.get(b) ?? 1e9));
+  for (const sku of conLectura) {
+    const k = E.porSku.get(sku);
+    const nums = [...k.pallets].sort((a, b) => a - b);
+    hSku.push([sku, producto(sku).desc, nums.length, nums.join(', '), k.cajas, k.kg]);
+  }
+  hSku.push(['TOTAL GENERAL', '', pallets.length, '', tot.cajas, tot.kg]);
+  XLSX.utils.book_append_sheet(wb, armarHoja(hSku, [40, 40, 13, 24, 8, 11], { 5: F_KG }, hSku.length - 2), 'Resumen_SKU');
+
+  // 3. Diferencias contra el packing list
+  const hDif = [['SKU', 'Descripción', 'Cajas esperadas', 'Cajas recibidas', 'Diferencia cajas',
+    'Kg esperados', 'Kg recibidos', 'Diferencia kg', 'Estado']];
+  let te = 0, tke = 0;
+  for (const p of prods) {
+    const k = E.porSku.get(p.sku) || { cajas: 0, kg: 0 };
+    te += p.esperadas; tke = r3(tke + p.kgEsperados);
+    hDif.push([p.sku, p.desc, p.esperadas, k.cajas, k.cajas - p.esperadas, p.kgEsperados, k.kg,
+      r3(k.kg - p.kgEsperados), estadoDiferencia(p.esperadas, k.cajas)]);
+  }
+  hDif.push(['TOTAL GENERAL', '', te, tot.cajas, tot.cajas - te, tke, tot.kg, r3(tot.kg - tke), '']);
+  XLSX.utils.book_append_sheet(wb, armarHoja(hDif, [40, 40, 10, 10, 10, 12, 12, 12, 11],
+    { 5: F_KG, 6: F_KG, 7: F_KG }, hDif.length - 2), 'Diferencias');
+
+  // 4. Detalle de escaneos
+  const hDet = [['Fecha y hora', 'Código leído', 'SKU', 'Descripción', 'Kg', 'N° pallet', 'Observación']];
+  for (const s of E.escaneos) {
+    hDet.push([serialExcel(s.ts), codigoCelda(s.leido), s.sku, producto(s.sku).desc, s.kg, s.pallet, s.repetida ? 'Caja repetida, registrada igual' : '']);
+  }
+  XLSX.utils.book_append_sheet(wb, armarHoja(hDet, [20, 18, 40, 40, 9, 9, 30], { 0: F_FECHA, 1: F_COD, 4: F_KG }), 'Detalle_Escaneos');
+
+  // 5. Lecturas sin match en el packing list
+  const hNo = [['Fecha y hora', 'Código leído']];
+  for (const s of E.noident) hNo.push([serialExcel(s.ts), codigoCelda(s.leido)]);
+  XLSX.utils.book_append_sheet(wb, armarHoja(hNo, [20, 30], { 0: F_FECHA, 1: F_COD }), 'No_Identificados');
+
+  // 6. Cajas del packing list que no se escanearon
+  const hFal = [['N° caja', 'SKU', 'Descripción', 'Kg', 'Fila en packing list']];
+  const faltan = [...E.cajas.values()].filter((c) => (E.porCodigo.get(c.codigo) || []).length < c.esperadas)
+    .sort((a, b) => a.fila - b.fila);
+  for (const c of faltan) hFal.push([codigoCelda(c.codigo), c.sku, producto(c.sku).desc, c.kg, c.fila]);
+  XLSX.utils.book_append_sheet(wb, armarHoja(hFal, [14, 40, 40, 9, 10], { 0: F_COD, 3: F_KG }), 'Cajas_No_Recibidas');
+
+  return wb;
+}
+
+function nombreArchivo() {
+  const d = new Date();
+  const fecha = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const ref = E.rec.ref.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '') || 'sin_ref';
+  return `Recepcion_${ref}_${fecha}.xlsx`;
+}
+
+async function exportar() {
+  let nombre;
+  try {
+    await cargarLibreriaExcel();
+    nombre = nombreArchivo();
+    XLSX.writeFile(construirLibro(), nombre, { compression: true });
+  } catch (e) {
+    avisar('error');
+    return toast('No se pudo generar el Excel: ' + (e.message || e), 'mal');
+  }
+  const rec = { ...E.rec, exportada: Date.now() };
+  try { await escribir([['meta', 'put', rec]]); E.rec = rec; } catch { /* solo es la marca de hora */ }
+  repintar();
+  const tot = totalRecibido();
+  const nueva = await confirmar({
+    titulo: 'Excel descargado',
+    cuerpo: `<b>${esc(nombre)}</b> quedó en la carpeta Descargas.<br><br>¿Iniciar una nueva recepción? La actual (${plural(tot.cajas, 'caja', 'cajas')}, ${plural(E.pallets.size, 'pallet', 'pallets')}) se borrará del equipo.`,
+    si: 'Iniciar nueva recepción', no: 'Seguir con esta recepción', peligro: true,
+  });
+  if (!nueva) return;
+  const seguro = await confirmar({
+    titulo: '¿Borrar la recepción?',
+    cuerpo: `Se borran del equipo todas las lecturas de <b>${esc(E.rec.ref)}</b> y no se pueden recuperar. Revise primero que el Excel esté en Descargas; ese archivo no se toca.`,
+    si: 'Borrar y empezar otra', no: 'Cancelar', peligro: true,
+  });
+  if (!seguro) return;
+  try {
+    await borrarRecepcion();
+  } catch (e) {
+    avisar('error');
+    toast('No se pudo borrar: ' + (e.message || e), 'mal');
+  }
+}
+
+/* =====================================================================
+   Pantallas
+   ===================================================================== */
+
+function irA(p, datos = {}, { historial = true } = {}) {
+  if (historial && (p === 'resumen' || p === 'detalle')) {
+    history.pushState({ p, ...datos }, '');
+    profundidad = p === 'resumen' ? 1 : 2;
+  }
+  if (p === 'escaneo') profundidad = 0;
+  if (p === 'detalle') {
+    if (detalleNum !== datos.num) seleccion.clear();
+    detalleNum = datos.num;
+  }
+  pantalla = p;
+  document.body.dataset.pantalla = p;
+  for (const s of document.querySelectorAll('.pantalla')) s.hidden = s.id !== 'p-' + p;
+  repintar();
+  window.scrollTo(0, 0);
+  enfocarLector();
+}
+
+// Una lectura en el resumen o el detalle vuelve directo a escanear, sin dejar esas
+// pantallas en el historial del botón atrás.
+let ignorarPop = false;
+function volverAEscaneo() {
+  if (profundidad > 0) {
+    ignorarPop = true;
+    history.go(-profundidad);
+    profundidad = 0;
+  }
+  irA('escaneo', {}, { historial: false });
+}
+window.addEventListener('popstate', (e) => {
+  if (ignorarPop) { ignorarPop = false; return; }
+  cerrarModal(null);
+  const st = e.state || {};
+  if (!E.rec) return irA('inicio', {}, { historial: false });
+  const p = st.p === 'resumen' || st.p === 'detalle' ? st.p : 'escaneo';
+  profundidad = p === 'resumen' ? 1 : p === 'detalle' ? 2 : 0;
+  if (p === 'detalle' && !E.pallets.has(st.num)) return history.back();
+  irA(p, st, { historial: false });
+});
+
+function repintar() {
+  if (pantalla === 'escaneo') pintarEscaneo();
+  else if (pantalla === 'resumen') pintarResumen();
+  else if (pantalla === 'detalle') pintarDetalle();
+}
+
+function pintarEscaneo({ destello = false } = {}) {
+  if (!E.rec) return;
+  const tot = totalRecibido();
+  $('#e-ref').textContent = E.rec.ref;
+  $('#e-tot').innerHTML = `${n(tot.cajas)} / ${n(E.rec.totalCajas)} cajas<br>${kg(tot.kg)} kg`;
+  const ult = ultimoEscaneo();
+  const panel = $('#e-panel');
+  const etq = $('#e-etq');
+  if (!ult) {
+    panel.classList.add('vacio');
+    $('#e-num').textContent = 'Escanee la primera caja';
+    etq.hidden = true;
+    $('#e-prod').hidden = true;
+    $('#e-stats').hidden = true;
+    $('#btn-lleno').disabled = true;
+    $('#btn-lleno-sub').textContent = '';
+    $('#btn-deshacer').disabled = true;
+    return;
+  }
+  const p = E.pallets.get(ult.pallet);
+  const st = E.porPallet.get(ult.pallet) || { cajas: 0, kg: 0 };
+  panel.classList.remove('vacio');
+  $('#e-num').textContent = ult.pallet;
+  const esNuevo = p && p.estado === 'ABIERTO' && st.cajas === 1;
+  etq.hidden = false;
+  etq.className = 'etq ' + (esNuevo ? 'nuevo' : p && p.estado === 'ABIERTO' ? 'abierto' : '');
+  etq.textContent = esNuevo ? 'NUEVO' : p ? p.estado : '';
+  if (destello) {
+    panel.classList.remove('flash');
+    void panel.offsetWidth;
+    panel.classList.add('flash');
+  }
+  $('#e-prod').hidden = false;
+  $('#e-desc').textContent = nombreProducto(ult.sku);
+  $('#e-caja').innerHTML = `Caja <b>${esc(ult.codigo)}</b> · <b>${kg(ult.kg)} kg</b>${ult.repetida ? '<span class="marca">REPETIDA</span>' : ''}`;
+  $('#e-stats').hidden = false;
+  $('#e-pal-t').textContent = `Pallet N° ${ult.pallet}`;
+  $('#e-pal-v').textContent = plural(st.cajas, 'caja', 'cajas');
+  $('#e-pal-s').textContent = `${kg(st.kg)} kg`;
+  const prod = producto(ult.sku);
+  const k = E.porSku.get(ult.sku) || { cajas: 0 };
+  $('#e-sku-v').textContent = `${n(k.cajas)} / ${n(prod.esperadas)}`;
+  const exceso = k.cajas > prod.esperadas;
+  $('#e-sku').classList.toggle('exceso', exceso);
+  $('#e-sku-barra').classList.toggle('exceso', exceso);
+  $('#e-sku-barra i').style.width = `${prod.esperadas ? Math.min(100, (k.cajas / prod.esperadas) * 100) : 100}%`;
+  const abierto = palletAbierto(ult.sku);
+  $('#btn-lleno').disabled = abierto == null;
+  $('#btn-lleno-sub').textContent = abierto == null ? 'El pallet de este producto ya está cerrado' : `Cierra el pallet N° ${abierto}`;
+  $('#btn-deshacer').disabled = false;
+}
+
+function pintarResumen() {
+  if (!E.rec) return;
+  $('#r-titulo').textContent = E.rec.ref;
+  for (const t of document.querySelectorAll('.tab')) t.classList.toggle('activa', t.dataset.tab === pestana);
+  const cuenta = $('#r-cuenta');
+  cuenta.hidden = !E.noident.length;
+  cuenta.textContent = E.noident.length;
+  const tot = totalRecibido();
+  const lista = $('#r-lista');
+  let html = '';
+  if (pestana === 'pallets') {
+    const abiertos = [...E.pallets.values()].filter((p) => p.estado === 'ABIERTO').length;
+    html += `<div class="totales">${plural(E.pallets.size, 'pallet', 'pallets')} <span>(${n(abiertos)} ${abiertos === 1 ? 'abierto' : 'abiertos'})</span><br>${plural(tot.cajas, 'caja', 'cajas')} · ${kg(tot.kg)} kg</div>`;
+    const pallets = [...E.pallets.values()].sort((a, b) => a.num - b.num);
+    if (!pallets.length) html += '<div class="vacia">Todavía no hay pallets.</div>';
+    for (const p of pallets) {
+      const st = E.porPallet.get(p.num) || { cajas: 0, kg: 0 };
+      html += `<button type="button" class="fila ${p.estado === 'ABIERTO' ? 'abierta' : ''}" data-pallet="${p.num}">
+        <span class="n">${p.num}</span>
+        <span class="i"><span class="a">${esc(nombreProducto(p.sku))}</span><br><span class="b">${plural(st.cajas, 'caja', 'cajas')} · ${kg(st.kg)} kg</span></span>
+        <span class="etq ${p.estado === 'ABIERTO' ? 'abierto' : ''}">${p.estado}</span></button>`;
+    }
+  } else if (pestana === 'avance') {
+    html += `<div class="totales">${n(tot.cajas)} / ${n(E.rec.totalCajas)} cajas <span>recibidas</span><br>${kg(tot.kg)} / ${kg(E.rec.totalKg)} kg · ${plural(E.pallets.size, 'pallet', 'pallets')}</div>`;
+    const prods = [...E.productos.values()].sort((a, b) => a.orden - b.orden);
+    for (const p of prods) {
+      const k = E.porSku.get(p.sku) || { cajas: 0, kg: 0, pallets: new Set() };
+      const est = estadoDiferencia(p.esperadas, k.cajas);
+      const nums = [...k.pallets].sort((a, b) => a - b);
+      const etiqueta = est === 'OK' ? 'OK' : est === 'FALTANTE' ? `FALTAN ${n(p.esperadas - k.cajas)}` : `SOBRAN ${n(k.cajas - p.esperadas)}`;
+      html += `<div class="avance">
+        <div class="fila2" style="margin:0"><span class="a">${esc(nombreProducto(p.sku))}</span><span class="estado ${est}">${etiqueta}</span></div>
+        <div class="fila2"><span><b>${n(k.cajas)}</b> / ${n(p.esperadas)} cajas</span><span><b>${kg(k.kg)}</b> / ${kg(p.kgEsperados)} kg</span></div>
+        <div class="barra ${k.cajas > p.esperadas ? 'exceso' : ''}"><i style="width:${p.esperadas ? Math.min(100, (k.cajas / p.esperadas) * 100) : 100}%"></i></div>
+        <div class="fila2"><span>${nums.length ? `${plural(nums.length, 'pallet', 'pallets')}: ${nums.join(', ')}` : 'Sin pallets'}</span></div>
+      </div>`;
+    }
+  } else {
+    html += `<div class="totales">${plural(E.noident.length, 'lectura no identificada', 'lecturas no identificadas')}<br><span>No se registraron como cajas. Van a la hoja No_Identificados.</span></div>`;
+    if (!E.noident.length) html += '<div class="vacia">Ninguna lectura sin identificar.</div>';
+    for (const s of [...E.noident].reverse()) {
+      html += `<div class="fila"><span class="i"><span class="a" style="font-family:ui-monospace,monospace">${esc(s.leido)}</span><br><span class="b">${hora(s.ts)}</span></span></div>`;
+    }
+  }
+  lista.innerHTML = html;
+  $('#btn-cambiar').hidden = !!(E.escaneos.length || E.noident.length);
+  $('#r-nota').textContent = `Iniciada ${fechaHora(E.rec.creada)} · ${E.rec.archivo}` +
+    (E.rec.exportada ? ` · Última exportación ${fechaHora(E.rec.exportada)}` : '');
+}
+
+function pintarDetalle() {
+  const p = E.pallets.get(detalleNum);
+  if (!p) return;
+  const st = E.porPallet.get(p.num) || { cajas: 0, kg: 0 };
+  for (const seq of [...seleccion]) if (!E.escaneos.some((s) => s.seq === seq && s.pallet === p.num)) seleccion.delete(seq);
+  $('#d-titulo').textContent = `Pallet N° ${p.num}`;
+  const cajas = E.escaneos.filter((s) => s.pallet === p.num).reverse();
+  let html = `<div class="ficha">
+    <div class="a">${esc(nombreProducto(p.sku))}</div>
+    <div class="cifras-p"><span class="etq ${p.estado === 'ABIERTO' ? 'abierto' : ''}">${p.estado}</span><span>${plural(st.cajas, 'caja', 'cajas')}</span><span>${kg(st.kg)} kg</span></div>
+    <div class="b">Creado ${fechaHora(p.creado)}${p.cerrado ? ` · cerrado ${fechaHora(p.cerrado)}` : ''}</div>
+  </div>
+  ${p.estado === 'ABIERTO'
+    ? `<button type="button" class="btn coral" data-accion="cerrar">Cerrar pallet N° ${p.num}</button>`
+    : `<button type="button" class="btn" data-accion="reabrir">Reabrir pallet N° ${p.num}</button>`}
+  <button type="button" class="btn sec" data-accion="todas">${seleccion.size === cajas.length && cajas.length ? 'Quitar selección' : 'Seleccionar todas'}</button>`;
+  for (const s of cajas) {
+    html += `<button type="button" class="caja-fila ${seleccion.has(s.seq) ? 'sel' : ''}" data-seq="${s.seq}">
+      <span class="chk"></span>
+      <span class="i"><span class="a">${esc(s.codigo)}</span>${s.repetida ? '<span class="marca">REPETIDA</span>' : ''}<br><span class="b">${kg(s.kg)} kg · ${hora(s.ts)}</span></span></button>`;
+  }
+  $('#d-lista').innerHTML = html;
+  const k = seleccion.size;
+  $('#d-pie').innerHTML = k
+    ? `<div class="acciones"><button type="button" class="btn" data-accion="mover">Mover (${k})</button><button type="button" class="btn peligro" data-accion="eliminar">Eliminar (${k})</button></div>`
+    : '<div class="nota">Toque cajas para moverlas a otro pallet del mismo producto o eliminarlas.</div>';
+}
+
+/* =====================================================================
+   Avisos, diálogos y mensajes
+   ===================================================================== */
+function mostrarNuevo(num, sku) {
+  $('#cn-num').textContent = num;
+  $('#cn-sku').textContent = nombreProducto(sku);
+  $('#toast').hidden = true;
+  $('#capa-nuevo').hidden = false;
+}
+function ocultarNuevo() { $('#capa-nuevo').hidden = true; }
+
+// Los avisos bloqueantes ignoran toques durante 400 ms: así un toque que ya venía en
+// camino no los cierra antes de que el operador los vea.
+function esperarToque(capa, selector) {
+  return new Promise((resolver) => {
+    const desde = Date.now();
+    const alTocar = (e) => {
+      if (Date.now() - desde < 400) return;
+      const b = selector ? e.target.closest(selector) : capa;
+      if (!b) return;
+      capa.removeEventListener('click', alTocar);
+      resolver(b.dataset ? b.dataset.r : null);
+    };
+    capa.addEventListener('click', alTocar);
+  });
+}
+
+async function mostrarError(titulo, codigo, textoAviso) {
+  const capa = $('#capa-error');
+  $('#ce-titulo').textContent = titulo;
+  $('#ce-cod').textContent = codigo;
+  $('#ce-texto').textContent = textoAviso;
+  bloqueo = 'error';
+  $('#toast').hidden = true;
+  capa.hidden = false;
+  await esperarToque(capa);
+  capa.hidden = true;
+  bloqueo = null;
+  enfocarLector();
+}
+
+async function decidirRepetida(caja, previas) {
+  const capa = $('#capa-repetida');
+  const prod = producto(caja.sku);
+  const k = E.porSku.get(caja.sku) || { cajas: 0 };
+  const ult = previas[previas.length - 1];
+  $('#cr-cod').textContent = caja.codigo;
+  $('#cr-sku').textContent = `${nombreProducto(caja.sku)} · ${kg(caja.kg)} kg`;
+  $('#cr-texto').textContent = `Ya está en el pallet N° ${ult.pallet} (leída a las ${hora(ult.ts)}). ` +
+    `Registrarla otra vez deja el producto en ${n(k.cajas + 1)} de ${n(prod.esperadas)} cajas.`;
+  bloqueo = 'repetida';
+  $('#toast').hidden = true;
+  capa.hidden = false;
+  const r = await esperarToque(capa, '[data-r]');
+  capa.hidden = true;
+  bloqueo = null;
+  enfocarLector();
+  return r === 'registrar';
+}
+
+let resolverModal = null;
+function abrirModal(html) {
+  return new Promise((resolver) => {
+    if (resolverModal) resolverModal(null);
+    resolverModal = resolver;
+    $('#modal-hoja').innerHTML = html;
+    $('#modal').hidden = false;
+    bloqueo = bloqueo || 'modal';
+  });
+}
+function cerrarModal(valor) {
+  if (!resolverModal) return;
+  const r = resolverModal;
+  resolverModal = null;
+  $('#modal').hidden = true;
+  if (bloqueo === 'modal') bloqueo = null;
+  r(valor);
+  enfocarLector();
+}
+$('#modal').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-r]');
+  if (b) return cerrarModal(b.dataset.r);
+  if (e.target === $('#modal')) cerrarModal(null);   // tocar fuera = cancelar
+});
+
+async function confirmar({ titulo, cuerpo, si = 'Aceptar', no = 'Cancelar', peligro = false }) {
+  const r = await abrirModal(`<h2>${esc(titulo)}</h2><div class="cuerpo">${cuerpo}</div>
+    <div class="btns"><button type="button" class="btn grande ${peligro ? 'peligro' : ''}" data-r="si">${esc(si)}</button>
+    <button type="button" class="btn sec" data-r="no">${esc(no)}</button></div>`);
+  return r === 'si';
+}
+
+async function elegir({ titulo, cuerpo, opciones }) {
+  const r = await abrirModal(`<h2>${esc(titulo)}</h2><div class="cuerpo">${cuerpo}</div><div class="btns">${
+    opciones.map((o) => `<button type="button" class="btn" data-r="${esc(o.valor)}">${esc(o.texto)}<small>${esc(o.sub)}</small></button>`).join('')
+  }<button type="button" class="btn sec" data-r="">Cancelar</button></div>`);
+  return r === null || r === '' ? null : Number(r);
+}
+
+let temporizadorToast = null;
+function toast(msj, tipo = '') {
+  const t = $('#toast');
+  t.textContent = msj;
+  t.className = 'toast ' + tipo;
+  t.hidden = false;
+  clearTimeout(temporizadorToast);
+  temporizadorToast = setTimeout(() => { t.hidden = true; }, tipo === 'mal' ? 4500 : 2800);
+}
+
+/* =====================================================================
+   Lector: DataWedge escribe el código como teclado y termina con ENTER
+   ===================================================================== */
+const lector = $('#lectura');
+
+function campoDeTexto(el) {
+  return !!el && el !== lector && (el.tagName === 'SELECT' || el.tagName === 'TEXTAREA' || el.isContentEditable ||
+    (el.tagName === 'INPUT' && !['button', 'checkbox', 'radio', 'file', 'submit'].includes(el.type)));
+}
+function enfocarLector() {
+  if (E.rec && !campoDeTexto(document.activeElement) && document.activeElement !== lector) {
+    lector.focus({ preventScroll: true });
+  }
+  pintarEspejo();
+}
+function pintarEspejo() {
+  const espejo = $('#espejo');
+  if (!espejo) return;
+  const activo = document.activeElement === lector && document.hasFocus();
+  espejo.className = 'espejo ' + (activo ? 'activo' : 'inactivo');
+  $('#espejo-txt').textContent = lector.value || (activo ? 'Listo para escanear…' : 'Lector en pausa: toque aquí');
+}
+function tomarLectura() {
+  const v = lector.value;
+  lector.value = '';
+  pintarEspejo();
+  recibirLectura(v);
+}
+
+window.addEventListener('keydown', (e) => {
+  const t = e.target;
+  if (campoDeTexto(t)) return;              // p. ej. la referencia en la pantalla de inicio
+  const enter = e.key === 'Enter' || e.keyCode === 13;
+  if (!E.rec) {
+    if (enter) e.preventDefault();          // el ENTER del escáner nunca aprieta un botón
+    return;
+  }
+  if (enter) {
+    e.preventDefault();
+    e.stopPropagation();
+    tomarLectura();
+    enfocarLector();
+    return;
+  }
+  // Si el foco se había ido, el carácter no se pierde: se agrega al lector.
+  if (e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && t !== lector) {
+    e.preventDefault();
+    lector.value += e.key;
+    enfocarLector();
+  }
+}, true);
+$('#form-lectura').addEventListener('submit', (e) => { e.preventDefault(); tomarLectura(); });
+lector.addEventListener('input', pintarEspejo);
+lector.addEventListener('blur', () => setTimeout(enfocarLector, 0));
+window.addEventListener('focus', enfocarLector);
+window.addEventListener('blur', pintarEspejo);
+window.addEventListener('pageshow', enfocarLector);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') { enfocarLector(); mantenerPantalla(); }
+});
+setInterval(enfocarLector, 1000);
+// Tocar un botón no le quita el foco al lector (y así el ENTER nunca cae en un botón).
+document.addEventListener('mousedown', (e) => {
+  if (!e.target.closest('input, select, textarea, [contenteditable]')) e.preventDefault();
+}, true);
+document.addEventListener('click', () => setTimeout(enfocarLector, 0));
+$('#espejo').addEventListener('click', enfocarLector);
+
+/* =====================================================================
+   Pantalla encendida, almacenamiento persistente y una sola ventana
+   ===================================================================== */
+let candado = null;
+async function mantenerPantalla() {
+  if (!E.rec || document.visibilityState !== 'visible' || !navigator.wakeLock) return;
+  if (candado && !candado.released) return;
+  try { candado = await navigator.wakeLock.request('screen'); } catch { /* no disponible */ }
+}
+function soltarPantalla() {
+  if (candado) { candado.release().catch(() => {}); candado = null; }
+}
+function pedirPersistencia() {
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch { /* opcional */ }
+}
+function tomarInstancia() {
+  if (!navigator.locks) return Promise.resolve(true);
+  return new Promise((resolver) => {
+    navigator.locks.request('recepcion-tc27-ventana', { ifAvailable: true }, (lock) => {
+      resolver(!!lock);
+      return lock ? new Promise(() => {}) : undefined;   // se mantiene mientras la página viva
+    }).catch(() => resolver(true));
+  });
+}
+
+/* =====================================================================
+   Eventos de la interfaz
+   ===================================================================== */
+$('#btn-archivo').addEventListener('click', () => $('#archivo').click());
+$('#archivo').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) procesarArchivo(f); });
+$('#carga').addEventListener('change', (e) => {
+  const s = e.target;
+  if (s.id === 'm-hoja') {
+    const det = detectar(PL.wb, s.value);
+    PL.hoja = s.value;
+    PL.fila = det ? det.fila : 0;
+    PL.mapeo = det ? det.mapeo : {};
+  } else if (s.dataset.campo) {
+    const c = s.value === '' ? null : Number(s.value);
+    const t = c == null ? null : titulosDeFila(PL.wb.Sheets[PL.hoja], PL.fila).find((x) => x.c === c);
+    PL.mapeo[s.dataset.campo] = t ? { c: t.c, letra: t.letra, titulo: t.titulo } : null;
+  } else return;
+  releer();
+});
+$('#ref').addEventListener('input', validarInicio);
+$('#ref').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
+$('#btn-iniciar').addEventListener('click', iniciarRecepcion);
+
+$('#btn-lleno').addEventListener('click', () => encolar(palletLleno));
+$('#btn-deshacer').addEventListener('click', () => encolar(deshacerUltimo));
+$('#btn-resumen').addEventListener('click', () => { pestana = 'pallets'; irA('resumen'); });
+for (const b of document.querySelectorAll('[data-volver]')) b.addEventListener('click', () => history.back());
+$('#capa-nuevo').addEventListener('click', ocultarNuevo);
+
+document.querySelector('.tabs').addEventListener('click', (e) => {
+  const t = e.target.closest('.tab');
+  if (!t) return;
+  pestana = t.dataset.tab;
+  pintarResumen();
+  $('#r-lista').scrollTop = 0;
+});
+$('#r-lista').addEventListener('click', (e) => {
+  const f = e.target.closest('[data-pallet]');
+  if (f) irA('detalle', { num: Number(f.dataset.pallet) });
+});
+$('#btn-exportar').addEventListener('click', () => encolar(exportar));
+$('#btn-cambiar').addEventListener('click', () => encolar(async () => {
+  if (E.escaneos.length || E.noident.length) return;
+  const si = await confirmar({ titulo: '¿Cambiar el packing list?', cuerpo: 'Todavía no hay lecturas. Vuelve a la pantalla de inicio para cargar otro archivo o corregir la referencia.', si: 'Volver al inicio', no: 'Cancelar' });
+  if (si) await borrarRecepcion();
+}));
+
+$('#d-lista').addEventListener('click', (e) => {
+  const fila = e.target.closest('[data-seq]');
+  if (fila) {
+    const seq = Number(fila.dataset.seq);
+    if (seleccion.has(seq)) seleccion.delete(seq); else seleccion.add(seq);
+    return pintarDetalle();
+  }
+  const b = e.target.closest('[data-accion]');
+  if (!b) return;
+  const num = detalleNum;
+  if (b.dataset.accion === 'cerrar') encolar(() => cerrarPallet(num));
+  else if (b.dataset.accion === 'reabrir') encolar(() => reabrirPallet(num));
+  else if (b.dataset.accion === 'todas') {
+    const cajas = E.escaneos.filter((s) => s.pallet === num);
+    if (seleccion.size === cajas.length) seleccion.clear(); else cajas.forEach((s) => seleccion.add(s.seq));
+    pintarDetalle();
+  }
+});
+$('#d-pie').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-accion]');
+  if (!b || !seleccion.size) return;
+  const num = detalleNum;
+  const seqs = [...seleccion];
+  if (b.dataset.accion === 'mover') encolar(() => moverCajas(num, seqs));
+  else if (b.dataset.accion === 'eliminar') encolar(() => eliminarCajas(num, seqs));
+});
+$('#btn-reintentar').addEventListener('click', () => location.reload());
+
+/* =====================================================================
+   Instalación y actualizaciones (service worker)
+   ===================================================================== */
+let pedidoInstalar = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  pedidoInstalar = e;
+  $('#btn-instalar').hidden = false;
+});
+$('#btn-instalar').addEventListener('click', async () => {
+  if (!pedidoInstalar) return;
+  pedidoInstalar.prompt();
+  await pedidoInstalar.userChoice.catch(() => null);
+  pedidoInstalar = null;
+  $('#btn-instalar').hidden = true;
+});
+
+let actualizacionPedida = false;
+function registrarSW() {
+  if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
+  navigator.serviceWorker.register('service-worker.js').then((reg) => {
+    const ofrecer = () => { if (reg.waiting && navigator.serviceWorker.controller) $('#actualizar').hidden = false; };
+    ofrecer();
+    reg.addEventListener('updatefound', () => {
+      const nuevo = reg.installing;
+      if (nuevo) nuevo.addEventListener('statechange', () => { if (nuevo.state === 'installed') ofrecer(); });
+    });
+    $('#btn-actualizar').addEventListener('click', () => {
+      actualizacionPedida = true;
+      if (reg.waiting) reg.waiting.postMessage('activar'); else location.reload();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) reg.update().catch(() => {});
+    });
+  }).catch((e) => console.warn('Service worker no registrado:', e));
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (actualizacionPedida) location.reload();
+  });
+}
+
+/* =====================================================================
+   Modo prueba (?prueba): simula lecturas desde el PC
+   ===================================================================== */
+function montarPrueba() {
+  const panel = $('#prueba');
+  panel.hidden = false;
+  panel.innerHTML = `<button type="button" data-p="abrir">Simular ▸</button><div class="opciones" hidden>
+    <button type="button" data-p="pendiente">Caja pendiente</button>
+    <button type="button" data-p="mismo">Mismo producto</button>
+    <button type="button" data-p="repetir">Repetir última</button>
+    <button type="button" data-p="desconocido">Código desconocido</button></div>`;
+  panel.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-p]');
+    if (!b) return;
+    const pendientes = (sku) => [...E.cajas.values()].filter((c) => (!sku || c.sku === sku) &&
+      (E.porCodigo.get(c.codigo) || []).length < c.esperadas);
+    const ult = ultimoEscaneo();
+    let codigo = null;
+    if (b.dataset.p === 'abrir') { $('.opciones', panel).hidden = !$('.opciones', panel).hidden; return; }
+    if (b.dataset.p === 'pendiente') { const l = pendientes(); codigo = l.length ? l[Math.floor(Math.random() * l.length)].codigo : null; }
+    if (b.dataset.p === 'mismo' && ult) { const l = pendientes(ult.sku); codigo = l.length ? l[0].codigo : null; }
+    if (b.dataset.p === 'repetir' && ult) codigo = ult.leido;
+    if (b.dataset.p === 'desconocido') codigo = '99' + String(Date.now()).slice(-6);
+    if (codigo) recibirLectura(codigo); else toast('No hay una caja para simular.');
+  });
+  window.recepcion = { estado: () => E, leer: recibirLectura, cola: () => cola };
+}
+
+/* =====================================================================
+   Arranque
+   ===================================================================== */
+async function arrancar() {
+  if (!(await tomarInstancia())) return irA('bloqueo', {}, { historial: false });
+  try {
+    BD.db = await abrirBD();
+    await cargarEstado();
+  } catch (e) {
+    $('#b-titulo').textContent = 'No se pudo abrir el almacenamiento';
+    $('#b-texto').textContent = `La app guarda cada caja en el equipo y el navegador no lo permitió (${e.message || e}). ` +
+      'Revise que Chrome no esté en modo incógnito y que no se hayan bloqueado los datos del sitio.';
+    return irA('bloqueo', {}, { historial: false });
+  }
+  if (new URLSearchParams(location.search).has('prueba')) montarPrueba();
+  history.replaceState({ p: E.rec ? 'escaneo' : 'inicio' }, '');
+  if (E.rec) {
+    irA('escaneo', {}, { historial: false });
+    mantenerPantalla();
+    pedirPersistencia();
+  } else {
+    irA('inicio', {}, { historial: false });
+  }
+  registrarSW();
+}
+arrancar();
+</script>
+</body>
+</html>
