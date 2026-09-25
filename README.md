@@ -49,6 +49,13 @@ son correlativos (1, 2, 3…) en orden de creación, y cada SKU tiene como máxi
   se reabre, o se eliminan o mueven cajas a otro pallet del mismo SKU. Si al reabrir un
   pallet su SKU ya tenía otro abierto, ese se cierra.
 
+**Pallet mixto (excepción).** Si a mitad de la recepción se ve que dos productos chicos
+caben juntos, en el detalle de un pallet se usa **Unir**. Pasa las cajas seleccionadas, o el
+pallet completo con **Unir pallet completo con otro**, a cualquier pallet, que queda
+**MIXTO**. Solo se mueven esas cajas: las siguientes de cada producto siguen yendo a su propio
+pallet, así que para juntar más hay que volver a unir. Es a propósito, para que siga siendo una
+excepción. Mover, en cambio, solo acepta pallets donde ya esté ese producto.
+
 **Numeración.** Un pallet que queda vacío (al deshacer, eliminar o mover sus cajas)
 desaparece. Su número se reutiliza solo si era el último: nunca cambia el número de un
 pallet que ya tiene etiqueta física.
@@ -252,7 +259,7 @@ confirmar dos veces.
 
 | Hoja | Contenido |
 |---|---|
-| **Pallets** | N° pallet, SKU, descripción, cajas, kg, estado. Total general al final |
+| **Pallets** | N° pallet, tipo (SIMPLE o MIXTO), SKU, descripción, cajas, kg, estado. Un pallet mixto ocupa una fila por producto, con el mismo N°. Total general al final |
 | **Resumen_SKU** | SKU, descripción, N° de pallets, pallets usados (ej. "3, 7, 12"), cajas, kg |
 | **Diferencias** | Por SKU del packing list, incluidos los que no llegaron: cajas y kg esperados vs recibidos, diferencia y **Estado**: OK, FALTANTE o SOBRANTE |
 | **Detalle_Escaneos** | Fecha y hora, código leído, SKU, descripción, kg, N° pallet y observación (cajas repetidas registradas igual) |

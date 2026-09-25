@@ -392,7 +392,7 @@ h1, h2, h3 { margin: 0; }
 
 <script>
 'use strict';
-const VERSION_APP = '2026-09-25-2';   // igual que VERSION en service-worker.js
+const VERSION_APP = '2026-09-25-3';   // igual que VERSION en service-worker.js
 
 /* =====================================================================
    Utilidades
@@ -568,10 +568,13 @@ function recalcular() {
   E.porPallet = new Map();
   E.porSku = new Map();
   E.porCodigo = new Map();
-  for (const num of E.pallets.keys()) E.porPallet.set(num, { cajas: 0, kg: 0 });
+  for (const num of E.pallets.keys()) E.porPallet.set(num, { cajas: 0, kg: 0, skus: new Map() });
   for (const s of E.escaneos) {
-    const p = E.porPallet.get(s.pallet) || { cajas: 0, kg: 0 };
+    const p = E.porPallet.get(s.pallet) || { cajas: 0, kg: 0, skus: new Map() };
     p.cajas++; p.kg = r3(p.kg + s.kg);
+    const ps = p.skus.get(s.sku) || { cajas: 0, kg: 0 };
+    ps.cajas++; ps.kg = r3(ps.kg + s.kg);
+    p.skus.set(s.sku, ps);
     E.porPallet.set(s.pallet, p);
     const k = E.porSku.get(s.sku) || { cajas: 0, kg: 0, pallets: new Set() };
     k.cajas++; k.kg = r3(k.kg + s.kg); k.pallets.add(s.pallet);
@@ -596,6 +599,13 @@ function siguienteNumero() {
 }
 const totalRecibido = () => E.escaneos.reduce((a, s) => ({ cajas: a.cajas + 1, kg: r3(a.kg + s.kg) }), { cajas: 0, kg: 0 });
 const producto = (sku) => E.productos.get(sku) || { sku, desc: sku, esperadas: 0, kgEsperados: 0 };
+// Un pallet es MIXTO cuando tiene cajas de más de un producto (solo pasa al unir pallets).
+const esMixto = (num) => ((E.porPallet.get(num) || { skus: new Map() }).skus.size > 1);
+const nombrePallet = (num) => {
+  const p = E.pallets.get(num);
+  if (!esMixto(num)) return nombreProducto(p.sku);
+  return 'MIXTO: ' + [...E.porPallet.get(num).skus.keys()].map(nombreProducto).join(' + ');
+};
 const nombreProducto = (sku) => {
   const p = producto(sku);
   return p.desc && p.desc !== p.sku ? `${p.sku} · ${p.desc}` : p.sku;
@@ -1077,29 +1087,40 @@ async function eliminarCajas(num, seqs) {
   if (vacia) history.back(); else repintar();
 }
 
-async function moverCajas(origen, seqs) {
-  const p = E.pallets.get(origen);
-  const destinos = [...E.pallets.values()].filter((x) => x.sku === p.sku && x.num !== origen).sort((a, b) => a.num - b.num);
-  if (!destinos.length) return toast('No hay otro pallet de este producto para mover las cajas.');
+// Mover: a otro pallet donde ya esté ese producto. Unir (excepción): a cualquier pallet,
+// que queda MIXTO. En ambos casos solo se mueven estas cajas; las siguientes de cada
+// producto siguen yendo a su propio pallet abierto.
+async function moverCajas(origen, seqs, { unir = false } = {}) {
+  const mover = new Set(seqs);
+  const skus = [...new Set(E.escaneos.filter((s) => mover.has(s.seq)).map((s) => s.sku))];
+  if (!unir && skus.length > 1) return toast('Para mover, elija cajas de un solo producto. Para juntar productos distintos use Unir.');
+  const tiene = (num, sku) => E.pallets.get(num).sku === sku || (E.porPallet.get(num) || { skus: new Map() }).skus.has(sku);
+  const destinos = [...E.pallets.values()].filter((x) => x.num !== origen && (unir || tiene(x.num, skus[0])))
+    .sort((a, b) => a.num - b.num);
+  if (!destinos.length) {
+    return toast(unir ? 'No hay otro pallet con el que unir.' : 'No hay otro pallet de este producto para mover las cajas.');
+  }
   const destino = await elegir({
-    titulo: `Mover ${plural(seqs.length, 'caja', 'cajas')} a…`,
-    cuerpo: `Pallets de <b>${esc(nombreProducto(p.sku))}</b>`,
+    titulo: `${unir ? 'Unir' : 'Mover'} ${plural(seqs.length, 'caja', 'cajas')} a…`,
+    cuerpo: unir ? 'Cualquier pallet. El que reciba cajas de otro producto queda <b>MIXTO</b>.'
+      : `Pallets con <b>${esc(nombreProducto(skus[0]))}</b>`,
     opciones: destinos.map((d) => {
       const st = E.porPallet.get(d.num) || { cajas: 0, kg: 0 };
-      return { valor: d.num, texto: `Pallet N° ${d.num}`, sub: `${d.estado} · ${plural(st.cajas, 'caja', 'cajas')} · ${kg(st.kg)} kg` };
+      return { valor: d.num, texto: `Pallet N° ${d.num}`, sub: `${nombrePallet(d.num)} · ${d.estado} · ${plural(st.cajas, 'caja', 'cajas')}` };
     }),
   });
   if (destino == null) return;
   const total = (E.porPallet.get(origen) || { cajas: 0 }).cajas;
   const vacia = seqs.length >= total;
+  const quedaMixto = new Set([...(E.porPallet.get(destino) || { skus: new Map() }).skus.keys(), E.pallets.get(destino).sku, ...skus]).size > 1;
   const si = await confirmar({
-    titulo: `¿Mover al pallet N° ${destino}?`,
-    cuerpo: `${plural(seqs.length, 'caja', 'cajas')} del pallet N° ${origen} al N° ${destino}.` +
-      (vacia ? '<br><br>El pallet N° ' + origen + ' queda vacío y <b>se elimina</b>.' : ''),
-    si: 'Mover', no: 'Cancelar',
+    titulo: `¿${unir ? 'Unir' : 'Mover'} al pallet N° ${destino}?`,
+    cuerpo: `${plural(seqs.length, 'caja', 'cajas')} del pallet N° ${origen} al N° ${destino}. Mueva también las cajas físicas.` +
+      (quedaMixto ? `<br><br>El pallet N° ${destino} queda <b>MIXTO</b>. Las próximas cajas de cada producto siguen yendo a su propio pallet.` : '') +
+      (vacia ? `<br><br>El pallet N° ${origen} queda vacío y <b>se elimina</b>.` : ''),
+    si: unir ? 'Unir' : 'Mover', no: 'Cancelar',
   });
   if (!si) return;
-  const mover = new Set(seqs);
   const movidos = E.escaneos.filter((s) => mover.has(s.seq)).map((s) => ({ ...s, pallet: destino }));
   const ops = movidos.map((s) => ['escaneos', 'put', s]);
   if (vacia) ops.push(['pallets', 'del', origen]);
@@ -1114,7 +1135,7 @@ async function moverCajas(origen, seqs) {
   if (vacia) E.pallets.delete(origen);
   recalcular();
   seleccion.clear();
-  toast(`${plural(seqs.length, 'caja movida', 'cajas movidas')} al pallet N° ${destino}.`);
+  toast(`${plural(seqs.length, 'caja movida', 'cajas movidas')} al pallet N° ${destino}${esMixto(destino) ? ' (MIXTO)' : ''}.`);
   if (vacia) history.back(); else repintar();
 }
 
@@ -1172,13 +1193,19 @@ function construirLibro() {
 
   // 1. Pallets
   const pallets = [...E.pallets.values()].sort((a, b) => a.num - b.num);
-  const hPallets = [['N° pallet', 'SKU', 'Descripción', 'Cajas', 'Kg', 'Estado']];
+  // Un pallet mixto ocupa una fila por producto, con el mismo N° y Tipo MIXTO.
+  const hPallets = [['N° pallet', 'Tipo', 'SKU', 'Descripción', 'Cajas', 'Kg', 'Estado']];
   for (const p of pallets) {
-    const st = E.porPallet.get(p.num) || { cajas: 0, kg: 0 };
-    hPallets.push([p.num, p.sku, producto(p.sku).desc, st.cajas, st.kg, p.estado]);
+    const st = E.porPallet.get(p.num) || { skus: new Map() };
+    const tipo = esMixto(p.num) ? 'MIXTO' : 'SIMPLE';
+    const skus = [...st.skus.keys()].sort((a, b) => (orden.get(a) ?? 1e9) - (orden.get(b) ?? 1e9));
+    for (const sku of skus) {
+      const ps = st.skus.get(sku);
+      hPallets.push([p.num, tipo, sku, producto(sku).desc, ps.cajas, ps.kg, p.estado]);
+    }
   }
-  hPallets.push(['TOTAL GENERAL', plural(pallets.length, 'pallet', 'pallets'), '', tot.cajas, tot.kg, '']);
-  XLSX.utils.book_append_sheet(wb, armarHoja(hPallets, [11, 40, 40, 8, 11, 10], { 4: F_KG }, hPallets.length - 2), 'Pallets');
+  hPallets.push(['TOTAL GENERAL', '', plural(pallets.length, 'pallet', 'pallets'), '', tot.cajas, tot.kg, '']);
+  XLSX.utils.book_append_sheet(wb, armarHoja(hPallets, [11, 9, 40, 40, 8, 11, 10], { 5: F_KG }, hPallets.length - 2), 'Pallets');
 
   // 2. Resumen por SKU
   const hSku = [['SKU', 'Descripción', 'N° de pallets', 'Pallets usados', 'Cajas', 'Kg']];
@@ -1354,7 +1381,7 @@ function pintarEscaneo({ destello = false } = {}) {
   $('#e-desc').textContent = nombreProducto(ult.sku);
   $('#e-caja').innerHTML = `Caja <b>${esc(ult.codigo)}</b> · <b>${kg(ult.kg)} kg</b>${ult.repetida ? '<span class="marca">REPETIDA</span>' : ''}`;
   $('#e-stats').hidden = false;
-  $('#e-pal-t').textContent = `Pallet N° ${ult.pallet}`;
+  $('#e-pal-t').textContent = `Pallet N° ${ult.pallet}${esMixto(ult.pallet) ? ' · MIXTO' : ''}`;
   $('#e-pal-v').textContent = plural(st.cajas, 'caja', 'cajas');
   $('#e-pal-s').textContent = `${kg(st.kg)} kg`;
   const prod = producto(ult.sku);
@@ -1389,7 +1416,7 @@ function pintarResumen() {
       const st = E.porPallet.get(p.num) || { cajas: 0, kg: 0 };
       html += `<button type="button" class="fila ${p.estado === 'ABIERTO' ? 'abierta' : ''}" data-pallet="${p.num}">
         <span class="n">${p.num}</span>
-        <span class="i"><span class="a">${esc(nombreProducto(p.sku))}</span><br><span class="b">${plural(st.cajas, 'caja', 'cajas')} · ${kg(st.kg)} kg</span></span>
+        <span class="i"><span class="a">${esc(nombrePallet(p.num))}</span><br><span class="b">${plural(st.cajas, 'caja', 'cajas')} · ${kg(st.kg)} kg</span></span>
         <span class="etq ${p.estado === 'ABIERTO' ? 'abierto' : ''}">${p.estado}</span></button>`;
     }
   } else if (pestana === 'avance') {
@@ -1428,7 +1455,8 @@ function pintarDetalle() {
   $('#d-titulo').textContent = `Pallet N° ${p.num}`;
   const cajas = E.escaneos.filter((s) => s.pallet === p.num).reverse();
   let html = `<div class="ficha">
-    <div class="a">${esc(nombreProducto(p.sku))}</div>
+    <div class="a">${esc(nombrePallet(p.num))}</div>
+    ${esMixto(p.num) ? `<div class="b">${[...st.skus].map(([sku, x]) => `${esc(nombreProducto(sku))}: ${plural(x.cajas, 'caja', 'cajas')} · ${kg(x.kg)} kg`).join('<br>')}</div>` : ''}
     <div class="cifras-p"><span class="etq ${p.estado === 'ABIERTO' ? 'abierto' : ''}">${p.estado}</span><span>${plural(st.cajas, 'caja', 'cajas')}</span><span>${kg(st.kg)} kg</span></div>
     <div class="b">Creado ${fechaHora(p.creado)}${p.cerrado ? ` · cerrado ${fechaHora(p.cerrado)}` : ''}</div>
   </div>
@@ -1439,13 +1467,14 @@ function pintarDetalle() {
   for (const s of cajas) {
     html += `<button type="button" class="caja-fila ${seleccion.has(s.seq) ? 'sel' : ''}" data-seq="${s.seq}">
       <span class="chk"></span>
-      <span class="i"><span class="a">${esc(s.codigo)}</span>${s.repetida ? '<span class="marca">REPETIDA</span>' : ''}<br><span class="b">${kg(s.kg)} kg · ${hora(s.ts)}</span></span></button>`;
+      <span class="i"><span class="a">${esc(s.codigo)}</span>${s.repetida ? '<span class="marca">REPETIDA</span>' : ''}<br><span class="b">${esMixto(p.num) ? `${esc(nombreProducto(s.sku))} · ` : ''}${kg(s.kg)} kg · ${hora(s.ts)}</span></span></button>`;
   }
   $('#d-lista').innerHTML = html;
   const k = seleccion.size;
   $('#d-pie').innerHTML = k
-    ? `<div class="acciones"><button type="button" class="btn" data-accion="mover">Mover (${k})</button><button type="button" class="btn peligro" data-accion="eliminar">Eliminar (${k})</button></div>`
-    : '<div class="nota">Toque cajas para moverlas a otro pallet del mismo producto o eliminarlas.</div>';
+    ? `<div class="acciones"><button type="button" class="btn" data-accion="mover">Mover (${k})</button><button type="button" class="btn sec" data-accion="unir">Unir (${k})</button><button type="button" class="btn peligro ancho" data-accion="eliminar">Eliminar (${k})</button></div>`
+    : `<button type="button" class="btn sec" data-accion="unir-todo">Unir pallet completo con otro</button>
+       <div class="nota">Toque cajas para moverlas, unirlas a otro pallet o eliminarlas.</div>`;
 }
 
 /* =====================================================================
@@ -1752,10 +1781,16 @@ $('#d-lista').addEventListener('click', (e) => {
 });
 $('#d-pie').addEventListener('click', (e) => {
   const b = e.target.closest('[data-accion]');
-  if (!b || !seleccion.size) return;
+  if (!b) return;
   const num = detalleNum;
+  if (b.dataset.accion === 'unir-todo') {
+    const todas = E.escaneos.filter((s) => s.pallet === num).map((s) => s.seq);
+    return encolar(() => moverCajas(num, todas, { unir: true }));
+  }
+  if (!seleccion.size) return;
   const seqs = [...seleccion];
   if (b.dataset.accion === 'mover') encolar(() => moverCajas(num, seqs));
+  else if (b.dataset.accion === 'unir') encolar(() => moverCajas(num, seqs, { unir: true }));
   else if (b.dataset.accion === 'eliminar') encolar(() => eliminarCajas(num, seqs));
 });
 $('#btn-reintentar').addEventListener('click', () => location.reload());

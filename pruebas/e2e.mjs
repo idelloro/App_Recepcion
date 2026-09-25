@@ -294,6 +294,31 @@ try {
   st = await estado();
   afirmar(st.escaneos.at(-1).codigo === '10000024' && st.escaneos.at(-1).pallet === 2, 'y registra la caja en su pallet');
 
+  console.log('\nUnir: pallet mixto (excepción)');
+  await tocar('#btn-resumen');
+  await tocar('#r-lista [data-pallet="2"]');
+  const antesP2 = (await estado()).escaneos.filter((s) => s.pallet === 2).length;
+  await page.locator('#d-lista .caja-fila').nth(0).tap();
+  await tocar('#d-pie [data-accion="unir"]');
+  const opcionesUnir = await page.locator('#modal [data-r]:not([data-r=""])').allInnerTexts();
+  afirmar(opcionesUnir.length === 2 && opcionesUnir.some((t) => t.includes('N° 3')), 'Unir ofrece pallets de cualquier producto (N° 1 y N° 3)');
+  await tocar('#modal [data-r="3"]');
+  afirmar((await texto('#modal-hoja')).includes('MIXTO'), 'la confirmación avisa que el pallet queda MIXTO');
+  await tocar('#modal [data-r="si"]');
+  st = await estado();
+  const skus3 = new Set(st.escaneos.filter((s) => s.pallet === 3).map((s) => s.sku));
+  afirmar(skus3.size === 2 && st.escaneos.filter((s) => s.pallet === 2).length === antesP2 - 1, 'la caja pasa al N° 3, que queda con dos productos');
+  await tocar('#p-detalle [data-volver]');
+  await tocar('#r-lista [data-pallet="3"]');
+  await page.locator('#d-lista .caja-fila').nth(0).tap();
+  await captura('10a-mixto');
+  await page.locator('#d-lista .caja-fila').nth(0).tap();
+  await tocar('#p-detalle [data-volver]');
+  afirmar((await texto('#r-lista')).includes('MIXTO:'), 'el resumen muestra el pallet N° 3 como MIXTO');
+  await escanear('10000027');
+  st = await estado();
+  afirmar(st.escaneos.at(-1).pallet === 2, 'regla B: la siguiente caja de Ahumados sigue yendo a su propio pallet (N° 2), no al mixto');
+
   console.log('\nAvance y no identificados');
   await tocar('#btn-resumen');
   await tocar('.tab[data-tab="avance"]');
@@ -322,22 +347,30 @@ try {
     `hojas: ${wb.SheetNames.join(', ')}`);
   const aoa = (h) => XLSX.utils.sheet_to_json(wb.Sheets[h], { header: 1, raw: true });
   const pal = aoa('Pallets');
-  afirmar(pal[0].join('|') === 'N° pallet|SKU|Descripción|Cajas|Kg|Estado', 'Pallets: columnas');
-  afirmar(pal.length === 1 + st.pallets.length + 1 && pal.at(-1)[0] === 'TOTAL GENERAL' && pal.at(-1)[3] === st.escaneos.length,
-    `Pallets: una fila por pallet y total general (${pal.at(-1)[3]} cajas)`);
+  afirmar(pal[0].join('|') === 'N° pallet|Tipo|SKU|Descripción|Cajas|Kg|Estado', 'Pallets: columnas');
+  const filasEsperadas = st.pallets.reduce((a, p) => a + new Set(st.escaneos.filter((s) => s.pallet === p.num).map((s) => s.sku)).size, 0);
+  afirmar(pal.length === 1 + filasEsperadas + 1 && pal.at(-1)[0] === 'TOTAL GENERAL' && pal.at(-1)[4] === st.escaneos.length,
+    `Pallets: una fila por pallet y producto, y total general (${pal.at(-1)[4]} cajas)`);
+  const filas3 = pal.filter((f) => f[0] === 3);
+  afirmar(filas3.length === 2 && filas3.every((f) => f[1] === 'MIXTO'), 'Pallets: el N° 3 ocupa dos filas, marcadas MIXTO');
+  afirmar(pal.filter((f) => f[0] === 2).every((f) => f[1] === 'SIMPLE'), 'Pallets: el N° 2 es SIMPLE');
   const sku = aoa('Resumen_SKU');
   const minced = sku.find((f) => String(f[0]).includes('Minced'));
   afirmar(minced && minced[3] === '1, 3', `Resumen_SKU: pallets usados "1, 3" (${minced && minced[3]})`);
   const dif = aoa('Diferencias');
-  afirmar(dif.length === 1 + 5 + 1 && dif.slice(1, 6).every((f) => f[8] === 'FALTANTE'), 'Diferencias: los 5 SKU, faltantes, con total');
+  const estadoDif = (t) => (dif.find((f) => f[0] === t) || [])[8];
+  afirmar(dif.length === 1 + 5 + 1 && estadoDif('Ahumados C kgs') === 'OK' && estadoDif('Salmon Ahumado En Frio Minced 2 kg') === 'FALTANTE',
+    'Diferencias: los 5 SKU con total; Ahumados completo (OK) y Minced FALTANTE');
   const det = aoa('Detalle_Escaneos');
   afirmar(det.length === 1 + st.escaneos.length && typeof det[1][0] === 'number', 'Detalle_Escaneos: una fila por caja, con fecha de Excel');
   afirmar(aoa('No_Identificados')[1][1] === 55555555, 'No_Identificados: el código leído (como número, igual que en el packing list)');
   afirmar(dif.at(-1)[8] === undefined || dif.at(-1)[8] === '', 'Diferencias: la fila total no lleva estado');
   const unicos = new Set(st.escaneos.map((s) => s.codigo)).size;
   afirmar(aoa('Cajas_No_Recibidas').length === 1 + 40 - unicos, `Cajas_No_Recibidas: ${40 - unicos} cajas`);
-  const kgTotal = st.escaneos.length ? pal.at(-1)[4] : 0;
-  afirmar(Math.abs(kgTotal - pal.slice(1, -1).reduce((a, f) => a + f[4], 0)) < 1e-9, 'los kilos del total cuadran con la suma de pallets');
+  const kgTotal = st.escaneos.length ? pal.at(-1)[5] : 0;
+  afirmar(Math.abs(kgTotal - pal.slice(1, -1).reduce((a, f) => a + f[5], 0)) < 1e-6, 'los kilos del total cuadran con la suma de pallets');
+  const ahum = sku.find((f) => String(f[0]) === 'Ahumados C kgs');
+  afirmar(ahum && ahum[3] === '2, 3', `Resumen_SKU: Ahumados usa los pallets "2, 3" (${ahum && ahum[3]})`);
 
   // =================================================================== sin conexión
   console.log('\nSin conexión');
@@ -351,8 +384,8 @@ try {
   await page.reload();
   await page.waitForSelector('#p-escaneo:not([hidden])');
   afirmar(JSON.stringify(await estado()) === JSON.stringify(st), 'sin red, la app abre desde el equipo con la recepción intacta');
-  await escanear('10000027');
-  afirmar((await estado()).escaneos.at(-1).codigo === '10000027', 'y sigue escaneando sin conexión');
+  await escanear('10000021');
+  afirmar((await estado()).escaneos.at(-1).codigo === '10000021', 'y sigue escaneando sin conexión');
   await tocar('#btn-resumen');
   const [d2] = await Promise.all([page.waitForEvent('download'), page.locator('#btn-exportar').tap()]);
   afirmar(!!d2.suggestedFilename(), 'exporta sin conexión (SheetJS va incluido)');
